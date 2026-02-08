@@ -1,7 +1,17 @@
 """Pydantic schemas for API request/response."""
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class GeometryIssue(BaseModel):
+    """A single geometry validation issue."""
+
+    feature_id: Any = Field(..., description="Feature identifier (index or id column)")
+    type: str = Field(..., description="Issue type: empty_geometry, invalid_geometry, self_intersection")
+    severity: str = Field(..., description="critical or warning")
+    location: Optional[List[float]] = Field(None, description="[x, y] for map display")
+    description: Optional[str] = Field(None, description="Human-readable reason")
 
 
 # Error codes for consistent API error responses
