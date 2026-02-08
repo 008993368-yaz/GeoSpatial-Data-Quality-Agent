@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: geospatial-quality-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_outputs:/app/outputs
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=True
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:3000
+      - MAX_UPLOAD_SIZE_MB=50
+      - UPLOAD_DIR=./uploads
+      - OUTPUT_DIR=./outputs
+    # Optional: create backend/.env from backend/.env.example
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+volumes:
+  backend_uploads:
+  backend_outputs:
