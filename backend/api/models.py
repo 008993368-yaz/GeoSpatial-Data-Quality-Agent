@@ -1,22 +1,32 @@
 """Pydantic schemas for API request/response."""
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 
+# Error codes for consistent API error responses
+class ErrorCode:
+    """Error codes returned in API error responses."""
+
+    NO_FILE = "NO_FILE"
+    INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
+    FILE_TOO_LARGE = "FILE_TOO_LARGE"
+    SAVE_FAILED = "SAVE_FAILED"
+
+
 class UploadResponse(BaseModel):
-    """Response after successful dataset upload."""
+    """Unified response after successful dataset upload. All upload endpoints return this schema."""
 
     dataset_id: str = Field(..., description="Unique identifier for the uploaded dataset")
     filename: str = Field(..., description="Original filename")
-    feature_count: int = Field(0, description="Number of features (0 until parsed)")
+    feature_count: int = Field(0, description="Number of features (0 if not parsed)")
     geometry_type: Optional[str] = Field(None, description="Geometry type e.g. Polygon, Point")
     crs: Optional[str] = Field(None, description="Coordinate reference system e.g. EPSG:4326")
     bounds: Optional[List[float]] = Field(None, description="[minX, minY, maxX, maxY]")
 
 
 class ErrorResponse(BaseModel):
-    """Standard error response."""
+    """Standard error response for failed requests."""
 
-    detail: str = Field(..., description="Error message")
-    code: Optional[str] = Field(None, description="Optional error code")
+    detail: str = Field(..., description="Human-readable error message")
+    code: Optional[str] = Field(None, description="Machine-readable error code")

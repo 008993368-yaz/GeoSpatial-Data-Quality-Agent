@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from api.models import UploadResponse
+from api.models import ErrorCode, ErrorResponse, UploadResponse
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
@@ -28,37 +28,49 @@ def _allowed_file(filename: str) -> bool:
     response_model=UploadResponse,
     responses={
         200: {"description": "Dataset uploaded successfully"},
-        400: {"description": "Invalid or missing file"},
-        413: {"description": "File too large"},
+        400: {"description": "Invalid or missing file", "model": ErrorResponse},
+        413: {"description": "File too large", "model": ErrorResponse},
+        500: {"description": "Server error saving file", "model": ErrorResponse},
     },
 )
-async def upload_dataset(file: UploadFile = File(..., description="Shapefile, GeoJSON, or KML file")):
+async def upload_dataset(file: UploadFile = File(..., description="Shapefile, GeoJSON, KML, or ZIP")):
     """
-    Upload a geospatial dataset (Shapefile, GeoJSON, KML/KMZ).
-    File is saved to UPLOAD_DIR under a new dataset_id.
+    Upload a geospatial dataset. Returns a unified UploadResponse with dataset_id,
+    filename, and optional metadata (feature_count, geometry_type, crs, bounds).
     """
     if not file.filename or not file.filename.strip():
-        raise HTTPException(status_code=400, detail="No file provided")
+        raise HTTPException(
+            status_code=400,
+            detail={"detail": "No file provided. Send a file in the 'file' form field.", "code": ErrorCode.NO_FILE},
+        )
 
     if not _allowed_file(file.filename):
         allowed = ", ".join(settings.ALLOWED_EXTENSIONS)
         raise HTTPException(
             status_code=400,
-            detail=f"File type not allowed. Allowed extensions: {allowed}",
+            detail={
+                "detail": f"File type not allowed. Allowed extensions: {allowed}",
+                "code": ErrorCode.INVALID_FILE_TYPE,
+            },
         )
 
-    # Read into memory to check size (for async UploadFile we read once then pass)
     contents = await file.read()
     if len(contents) > settings.max_upload_size_bytes:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large. Maximum size: {settings.MAX_UPLOAD_SIZE_MB} MB",
+            detail={
+                "detail": f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE_MB} MB.",
+                "code": ErrorCode.FILE_TOO_LARGE,
+            },
         )
 
     try:
         dataset_id = save_upload(BytesIO(contents), file.filename)
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"detail": f"Failed to save file: {str(e)}", "code": ErrorCode.SAVE_FAILED},
+        )
 
     # Extract metadata for shapefiles (.shp + sidecar .shx, .dbf in same dir)
     feature_count = 0
