@@ -5,7 +5,12 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from api.models import UploadResponse
 from core.config import settings
-from services.file_handler import save_upload
+from services.file_handler import (
+    extract_zip_in_upload_dir,
+    get_upload_path,
+    save_upload,
+)
+from services.shapefile_parser import parse_shapefile_metadata
 
 router = APIRouter()
 
@@ -53,11 +58,28 @@ async def upload_dataset(file: UploadFile = File(..., description="Shapefile, Ge
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
 
+    # Extract metadata for shapefiles (.shp + sidecar .shx, .dbf in same dir)
+    feature_count = 0
+    geometry_type = None
+    crs = None
+    bounds = None
+    suffix = Path(file.filename).suffix.lower()
+    if suffix == ".zip":
+        extract_zip_in_upload_dir(dataset_id)
+    if suffix in (".shp", ".zip"):
+        upload_dir = get_upload_path(dataset_id)
+        meta = parse_shapefile_metadata(upload_dir)
+        if meta:
+            feature_count = meta["feature_count"]
+            geometry_type = meta["geometry_type"]
+            crs = meta["crs"]
+            bounds = meta["bounds"]
+
     return UploadResponse(
         dataset_id=dataset_id,
         filename=file.filename,
-        feature_count=0,
-        geometry_type=None,
-        crs=None,
-        bounds=None,
+        feature_count=feature_count,
+        geometry_type=geometry_type,
+        crs=crs,
+        bounds=bounds,
     )
