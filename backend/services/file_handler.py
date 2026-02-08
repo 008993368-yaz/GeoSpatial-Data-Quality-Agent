@@ -3,7 +3,7 @@ import shutil
 import uuid
 import zipfile
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Optional
 
 from core.config import settings
 
@@ -30,6 +30,23 @@ def get_upload_path(dataset_id: str) -> Path:
 def get_saved_file_path(dataset_id: str, filename: str) -> Path:
     """Return the path where an uploaded file was saved (sanitized filename)."""
     return get_upload_path(dataset_id) / _sanitize_filename(filename)
+
+
+def get_primary_vector_path(dataset_id: str) -> Optional[Path]:
+    """
+    Return the path to the primary vector file for a dataset (for GeoPandas read_file).
+    Prefers .geojson, then .json, then .shp. Returns None if dataset dir does not exist
+    or contains no supported vector file.
+    """
+    dest_dir = get_upload_path(dataset_id)
+    if not dest_dir.is_dir():
+        return None
+    # Order: GeoJSON first, then shapefile
+    for ext in (".geojson", ".json", ".shp"):
+        candidates = list(dest_dir.glob(f"*{ext}"))
+        if candidates:
+            return candidates[0]
+    return None
 
 
 def extract_zip_in_upload_dir(dataset_id: str) -> bool:

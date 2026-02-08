@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     OUTPUT_DIR: str = "./outputs"
 
+    # Geometry validation (POST/GET /validate): all checks enabled by default
+    # Checks: null/empty geometry, invalid geometry, self-intersection (see core.validation)
+    GEOMETRY_VALIDATION_ENABLED: bool = True
+
     # Allowed geospatial file extensions (lowercase)
     ALLOWED_EXTENSIONS: List[str] = [
         ".shp",
