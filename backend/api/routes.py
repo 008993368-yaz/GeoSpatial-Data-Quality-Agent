@@ -7,9 +7,11 @@ from api.models import UploadResponse
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
+    get_saved_file_path,
     get_upload_path,
     save_upload,
 )
+from services.geojson_parser import parse_geojson_metadata
 from services.shapefile_parser import parse_shapefile_metadata
 
 router = APIRouter()
@@ -69,6 +71,14 @@ async def upload_dataset(file: UploadFile = File(..., description="Shapefile, Ge
     if suffix in (".shp", ".zip"):
         upload_dir = get_upload_path(dataset_id)
         meta = parse_shapefile_metadata(upload_dir)
+        if meta:
+            feature_count = meta["feature_count"]
+            geometry_type = meta["geometry_type"]
+            crs = meta["crs"]
+            bounds = meta["bounds"]
+    elif suffix in (".geojson", ".json"):
+        saved_path = get_saved_file_path(dataset_id, file.filename)
+        meta = parse_geojson_metadata(saved_path)
         if meta:
             feature_count = meta["feature_count"]
             geometry_type = meta["geometry_type"]

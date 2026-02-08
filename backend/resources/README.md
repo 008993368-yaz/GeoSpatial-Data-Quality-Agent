@@ -91,6 +91,14 @@ If `feature_count` is 3, `geometry_type` is `Polygon`, and `bounds` is set, the 
 
 Upload only `parks.shp` (no zip). The file is stored but metadata will be `feature_count: 0`, `geometry_type: null`, etc., because .shx/.dbf are required to read the shapefile. This confirms graceful fallback when sidecars are missing.
 
+## How to test #27 (GeoJSON parser & metadata)
+
+1. Start the backend (same as above).
+2. Upload the sample GeoJSON:
+   - **PowerShell:** `Invoke-RestMethod -Uri "http://localhost:8000/api/v1/upload" -Method Post -Form @{ file = Get-Item "backend\resources\sample.geojson" }`
+   - **curl:** `curl -X POST http://localhost:8000/api/v1/upload -F "file=@backend/resources/sample.geojson"`
+3. **Expected response:** `feature_count: 3`, `geometry_type` (e.g. `Point` or mixed), `bounds` set. Standard GeoJSON is WGS84, so `crs` may be `EPSG:4326` or similar.
+
 ---
 
 ## Usage in tests
