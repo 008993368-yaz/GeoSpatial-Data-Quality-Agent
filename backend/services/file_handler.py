@@ -50,6 +50,8 @@ def extract_zip_in_upload_dir(dataset_id: str) -> bool:
 
 
 def _sanitize_filename(name: str) -> str:
-    """Keep only safe filename characters."""
+    """Keep only safe filename characters; remove path traversal (..) and slashes."""
     safe = "".join(c for c in name if c.isalnum() or c in "._- ")
+    while ".." in safe:
+        safe = safe.replace("..", ".")
     return safe.strip() or "upload"
