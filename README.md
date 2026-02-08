@@ -710,14 +710,14 @@ Located in `datasets/test/`:
 ## 🗺️ Roadmap
 
 ### **Phase 1: Core Functionality** ✅ (Weeks 1-4)
-- [x] File ingestion (Shapefile, GeoJSON)
-- [x] Basic geometry validation
-- [x] Map-based preview
-- [x] Simple UI with Calcite
+- [ ] File ingestion (Shapefile, GeoJSON)
+- [ ] Basic geometry validation
+- [ ] Map-based preview
+- [ ] Simple UI with Calcite
 
 ### **Phase 2: Agent System** 🚧 (Weeks 5-8)
-- [x] LangGraph workflow implementation
-- [x] Attribute validation with LLM
+- [ ] LangGraph workflow implementation
+- [ ] Attribute validation with LLM
 - [ ] Topology validation
 - [ ] Recommendation generation
 
