@@ -27,6 +27,11 @@ def get_upload_path(dataset_id: str) -> Path:
     return settings.upload_path / dataset_id
 
 
+def get_saved_file_path(dataset_id: str, filename: str) -> Path:
+    """Return the path where an uploaded file was saved (sanitized filename)."""
+    return get_upload_path(dataset_id) / _sanitize_filename(filename)
+
+
 def extract_zip_in_upload_dir(dataset_id: str) -> bool:
     """
     If the dataset directory contains a single .zip file, extract it in place.
