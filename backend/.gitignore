@@ -1,0 +1,16 @@
+# Environment
+.env
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Upload/output dirs (keep structure, ignore contents)
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
