@@ -22,6 +22,7 @@ class ErrorCode:
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     FILE_TOO_LARGE = "FILE_TOO_LARGE"
     SAVE_FAILED = "SAVE_FAILED"
+    DATASET_NOT_FOUND = "DATASET_NOT_FOUND"
 
 
 class UploadResponse(BaseModel):
@@ -33,6 +34,19 @@ class UploadResponse(BaseModel):
     geometry_type: Optional[str] = Field(None, description="Geometry type e.g. Polygon, Point")
     crs: Optional[str] = Field(None, description="Coordinate reference system e.g. EPSG:4326")
     bounds: Optional[List[float]] = Field(None, description="[minX, minY, maxX, maxY]")
+
+
+class ValidationResult(BaseModel):
+    """Result of geometry validation for a dataset."""
+
+    dataset_id: str = Field(..., description="Dataset identifier that was validated")
+    issues: List[GeometryIssue] = Field(default_factory=list, description="List of geometry issues found")
+
+
+class ValidateRequest(BaseModel):
+    """Request body for POST /validate."""
+
+    dataset_id: str = Field(..., description="Dataset identifier (from upload) to validate")
 
 
 class ErrorResponse(BaseModel):

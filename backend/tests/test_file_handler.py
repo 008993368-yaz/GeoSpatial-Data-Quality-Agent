@@ -8,6 +8,7 @@ import pytest
 from services.file_handler import (
     _sanitize_filename,
     extract_zip_in_upload_dir,
+    get_primary_vector_path,
     get_saved_file_path,
     get_upload_path,
     save_upload,
@@ -69,3 +70,21 @@ def test_extract_zip_in_upload_dir_with_zip(tmp_path, monkeypatch):
         zf.writestr("inside.txt", "hello")
     assert extract_zip_in_upload_dir(dataset_id) is True
     assert (dest_dir / "inside.txt").read_text() == "hello"
+
+
+def test_get_primary_vector_path_missing(tmp_path, monkeypatch):
+    """get_primary_vector_path returns None when dataset dir does not exist."""
+    monkeypatch.setattr("core.config.settings.UPLOAD_DIR", str(tmp_path))
+    assert get_primary_vector_path("nonexistent-id") is None
+
+
+def test_get_primary_vector_path_geojson(tmp_path, monkeypatch):
+    """get_primary_vector_path returns path to .geojson when present."""
+    monkeypatch.setattr("core.config.settings.UPLOAD_DIR", str(tmp_path))
+    dataset_id = "geo-dataset"
+    dest_dir = tmp_path / dataset_id
+    dest_dir.mkdir()
+    (dest_dir / "data.geojson").write_text("{}")
+    path = get_primary_vector_path(dataset_id)
+    assert path is not None
+    assert path.name == "data.geojson"

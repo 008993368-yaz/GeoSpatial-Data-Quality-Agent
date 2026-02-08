@@ -3,16 +3,18 @@ from io import BytesIO
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from api.models import ErrorCode, ErrorResponse, UploadResponse
+from api.models import ErrorCode, ErrorResponse, GeometryIssue, UploadResponse, ValidateRequest, ValidationResult
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
+    get_primary_vector_path,
     get_saved_file_path,
     get_upload_path,
     save_upload,
 )
 from services.geojson_parser import parse_geojson_metadata
 from services.shapefile_parser import parse_shapefile_metadata
+from agents.geometry_agent import validate as run_geometry_validation
 
 router = APIRouter()
 
@@ -104,4 +106,68 @@ async def upload_dataset(file: UploadFile = File(..., description="Shapefile, Ge
         geometry_type=geometry_type,
         crs=crs,
         bounds=bounds,
+    )
+
+
+@router.post(
+    "/validate",
+    response_model=ValidationResult,
+    responses={
+        200: {"description": "Validation completed; issues list may be empty"},
+        404: {"description": "Dataset not found", "model": ErrorResponse},
+    },
+)
+async def validate_dataset(body: ValidateRequest):
+    """
+    Run geometry validation on an uploaded dataset (by dataset_id).
+    Checks: null/empty geometry, invalid geometry, self-intersection.
+    Returns list of issues with feature_id, type, severity, location, description.
+    """
+    path = get_primary_vector_path(body.dataset_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Dataset not found or no vector file: {body.dataset_id}",
+                "code": ErrorCode.DATASET_NOT_FOUND,
+            },
+        )
+    issues = run_geometry_validation(path)
+    return ValidationResult(dataset_id=body.dataset_id, issues=[_issue_to_model(i) for i in issues])
+
+
+@router.get(
+    "/validate/{dataset_id}",
+    response_model=ValidationResult,
+    responses={
+        200: {"description": "Validation results for the dataset"},
+        404: {"description": "Dataset not found", "model": ErrorResponse},
+    },
+)
+async def get_validation_results(dataset_id: str):
+    """
+    Run geometry validation for a dataset and return results (same as POST /validate).
+    Checks: null/empty geometry, invalid geometry, self-intersection.
+    """
+    path = get_primary_vector_path(dataset_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Dataset not found or no vector file: {dataset_id}",
+                "code": ErrorCode.DATASET_NOT_FOUND,
+            },
+        )
+    issues = run_geometry_validation(path)
+    return ValidationResult(dataset_id=dataset_id, issues=[_issue_to_model(i) for i in issues])
+
+
+def _issue_to_model(d: dict) -> GeometryIssue:
+    """Convert validation issue dict to GeometryIssue model."""
+    return GeometryIssue(
+        feature_id=d.get("feature_id"),
+        type=d.get("type", ""),
+        severity=d.get("severity", ""),
+        location=d.get("location"),
+        description=d.get("description"),
     )
