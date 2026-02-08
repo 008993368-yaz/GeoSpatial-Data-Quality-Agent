@@ -14,3 +14,11 @@ uploads/*
 !uploads/.gitkeep
 outputs/*
 !outputs/.gitkeep
+
+# Generated test shapefiles (run scripts/generate_test_shapefile.py to create)
+resources/*.shp
+resources/*.shx
+resources/*.dbf
+resources/*.prj
+resources/*.cpg
+resources/*.zip

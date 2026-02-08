@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # Allowed geospatial file extensions (lowercase)
     ALLOWED_EXTENSIONS: List[str] = [
         ".shp",
+        ".zip",  # Shapefile as zip (.shp + .shx, .dbf, .prj)
         ".geojson",
         ".json",  # GeoJSON often has .json
         ".kml",

@@ -1,6 +1,7 @@
 """File I/O operations for uploads and outputs."""
 import shutil
 import uuid
+import zipfile
 from pathlib import Path
 from typing import BinaryIO
 
@@ -24,6 +25,23 @@ def save_upload(file: BinaryIO, filename: str) -> str:
 def get_upload_path(dataset_id: str) -> Path:
     """Return the directory path for a given dataset_id."""
     return settings.upload_path / dataset_id
+
+
+def extract_zip_in_upload_dir(dataset_id: str) -> bool:
+    """
+    If the dataset directory contains a single .zip file, extract it in place.
+    Returns True if a zip was extracted, False otherwise.
+    """
+    dest_dir = get_upload_path(dataset_id)
+    zips = list(dest_dir.glob("*.zip"))
+    if not zips or len(zips) > 1:
+        return False
+    try:
+        with zipfile.ZipFile(zips[0], "r") as zf:
+            zf.extractall(dest_dir)
+        return True
+    except (zipfile.BadZipFile, OSError):
+        return False
 
 
 def _sanitize_filename(name: str) -> str:
