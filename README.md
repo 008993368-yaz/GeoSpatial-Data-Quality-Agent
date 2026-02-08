@@ -742,6 +742,14 @@ Located in `datasets/test/`:
 - [ ] Mobile-responsive interface
 - [ ] Fine-tuned LLM for GIS domain
 
+### 📋 **Detailed Project Backlog**
+
+For comprehensive task breakdown and sprint planning, see:
+- **[Product Backlog](PRODUCT_BACKLOG.md)** - Complete list of all features and tasks with acceptance criteria
+- **[Backlog Management Guide](BACKLOG_MANAGEMENT.md)** - Guidelines for managing and prioritizing work
+- **[Sprint Backlogs](sprints/)** - Sprint-specific planning and tracking
+- **[GitHub Issue Templates](.github/ISSUE_TEMPLATE/)** - Templates for creating trackable tasks
+
 ---
 
 ## 🤝 Contributing
