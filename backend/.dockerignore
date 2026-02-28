@@ -1,0 +1,32 @@
+# Environment and caches
+.env
+.env.*
+!.env.example
+venv
+.venv
+__pycache__
+*.py[cod]
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+
+# Upload/output contents (structure kept in image)
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Generated / local resources
+resources/*.shp
+resources/*.shx
+resources/*.dbf
+resources/*.prj
+resources/*.cpg
+resources/*.zip
+
+# Git and IDE
+.git
+.gitignore
+.dockerignore
+*.md
