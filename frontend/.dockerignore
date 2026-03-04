@@ -1,0 +1,17 @@
+# Dependencies and build output
+node_modules
+dist
+
+# Environment (use build args for VITE_* in Docker if needed)
+.env
+.env.*
+!.env.example
+*.local
+
+# Git and IDE
+.git
+.gitignore
+.dockerignore
+
+# Docs (optional)
+README.md
