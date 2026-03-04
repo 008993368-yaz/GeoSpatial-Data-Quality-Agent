@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import esriConfig from "@arcgis/core/config.js";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer.js";
 import Extent from "@arcgis/core/geometry/Extent.js";
+import Zoom from "@arcgis/core/widgets/Zoom.js";
 
 import { defaultCenter, defaultZoom } from "../../services/mapService";
 
@@ -14,18 +15,23 @@ if (apiKey) {
   esriConfig.apiKey = apiKey;
 }
 
+const DATASET_LAYER_ID = "dataset-layer";
+
 export type MapViewerProps = {
   datasetId?: string;
   bounds?: number[] | null;
+  /** Optional title for the dataset layer (e.g. filename) for the layer list. */
+  layerTitle?: string;
 };
 
-export function MapViewer({ datasetId, bounds }: MapViewerProps) {
+export function MapViewer({ datasetId, bounds, layerTitle }: MapViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const viewRef = useRef<MapView | null>(null);
   const layerRef = useRef<GeoJSONLayer | null>(null);
+  const [datasetLayerVisible, setDatasetLayerVisible] = useState(true);
 
-  // Initialize map and view once
+  // Initialize map and view once (zoom/pan enabled by default on MapView)
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -41,6 +47,9 @@ export function MapViewer({ datasetId, bounds }: MapViewerProps) {
       zoom: defaultZoom,
     });
     viewRef.current = view;
+
+    const zoom = new Zoom({ view, layout: "vertical" });
+    view.ui.add(zoom, "top-right");
 
     return () => {
       if (viewRef.current) {
@@ -72,7 +81,13 @@ export function MapViewer({ datasetId, bounds }: MapViewerProps) {
     }
 
     const url = `/api/v1/datasets/${datasetId}/geojson`;
-    const layer = new GeoJSONLayer({ url });
+    const layer = new GeoJSONLayer({
+      url,
+      id: DATASET_LAYER_ID,
+      title: layerTitle || "Dataset",
+    });
+    layer.visible = true;
+    setDatasetLayerVisible(true);
     map.add(layer);
     layerRef.current = layer;
 
@@ -97,14 +112,56 @@ export function MapViewer({ datasetId, bounds }: MapViewerProps) {
         }
       });
     }
-  }, [datasetId, bounds?.join(",")]);
+  }, [datasetId, bounds?.join(","), layerTitle]);
+
+  // Sync visibility toggle to layer when layer exists
+  useEffect(() => {
+    if (layerRef.current) {
+      layerRef.current.visible = datasetLayerVisible;
+    }
+  }, [datasetLayerVisible]);
+
+  const handleLayerVisibilityChange = () => {
+    setDatasetLayerVisible((v) => !v);
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className="map-viewer"
-      style={{ width: "100%", height: "100%", minHeight: 400 }}
-      aria-label="Map view"
-    />
+    <div className="map-viewer-wrapper" style={{ position: "relative", width: "100%", height: "100%", minHeight: 400 }}>
+      {datasetId && (
+        <div
+          className="map-layer-list"
+          style={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            zIndex: 1,
+            background: "rgba(255,255,255,0.95)",
+            padding: "8px 12px",
+            borderRadius: 6,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+            fontSize: "0.875rem",
+          }}
+          role="group"
+          aria-label="Layers"
+        >
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Layers</div>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={datasetLayerVisible}
+              onChange={handleLayerVisibilityChange}
+              aria-label="Toggle dataset layer visibility"
+            />
+            <span>{layerTitle || "Dataset"}</span>
+          </label>
+        </div>
+      )}
+      <div
+        ref={containerRef}
+        className="map-viewer"
+        style={{ width: "100%", height: "100%", minHeight: 400 }}
+        aria-label="Map view"
+      />
+    </div>
   );
 }

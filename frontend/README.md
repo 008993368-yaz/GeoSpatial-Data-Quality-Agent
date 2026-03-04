@@ -1,14 +1,16 @@
 # Frontend — GeoSpatial Data Quality Agent
 
-React + TypeScript + Vite app with ArcGIS MapView for map-based preview (Issue #32).
+React + TypeScript + Vite app with ArcGIS MapView for map-based preview. The map supports zoom/pan (mouse + Zoom widget) and a layer visibility toggle for the uploaded dataset (Issue #32, #34).
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# Edit .env and set VITE_ARCGIS_API_KEY (get one at https://developers.arcgis.com/)
+# Edit .env and set VITE_ARCGIS_API_KEY (required for the map — see below)
 ```
+
+**ArcGIS API key (required):** The map uses the [ArcGIS Maps SDK for JavaScript](https://developers.arcgis.com/) for basemaps and tiles. You must set `VITE_ARCGIS_API_KEY` in `.env`; get a free key at [https://developers.arcgis.com/](https://developers.arcgis.com/).
 
 ## Configurable map (env)
 

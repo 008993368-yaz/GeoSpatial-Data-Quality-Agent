@@ -93,6 +93,7 @@ function App() {
         <MapViewer
           datasetId={currentDataset?.dataset_id}
           bounds={currentDataset?.bounds ?? null}
+          layerTitle={currentDataset?.filename}
         />
       </main>
     </div>
