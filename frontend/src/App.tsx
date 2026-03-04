@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MapViewer } from "./components/Map/MapViewer";
+import type { ValidationResult } from "./types/api";
 
 type UploadResponse = {
   dataset_id: string;
@@ -13,6 +14,9 @@ function App() {
   );
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -41,6 +45,8 @@ function App() {
 
       const data = (await res.json()) as UploadResponse;
       setCurrentDataset(data);
+      setValidationResult(null);
+      setValidationError(null);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Upload failed";
       setError(msg);
@@ -48,6 +54,32 @@ function App() {
       setIsUploading(false);
       // reset input so same file can be selected again if needed
       event.target.value = "";
+    }
+  }
+
+  async function handleValidate() {
+    if (!currentDataset?.dataset_id) return;
+    setValidationError(null);
+    setValidationResult(null);
+    setIsValidating(true);
+    try {
+      const res = await fetch(`/api/v1/validate/${currentDataset.dataset_id}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const detail =
+          (typeof data.detail === "string"
+            ? data.detail
+            : data.detail?.detail) ?? res.statusText;
+        throw new Error(detail);
+      }
+      const data = (await res.json()) as ValidationResult;
+      setValidationResult(data);
+    } catch (e) {
+      setValidationError(
+        e instanceof Error ? e.message : "Validation failed"
+      );
+    } finally {
+      setIsValidating(false);
     }
   }
 
@@ -75,6 +107,27 @@ function App() {
             disabled={isUploading}
           />
         </label>
+        <button
+          type="button"
+          onClick={handleValidate}
+          disabled={!currentDataset || isUploading || isValidating}
+          style={{
+            padding: "0.35rem 0.75rem",
+            fontSize: "0.85rem",
+            borderRadius: "4px",
+            border: "1px solid #1976d2",
+            background: !currentDataset || isUploading
+              ? "#e0e0e0"
+              : "#1976d2",
+            color: !currentDataset || isUploading ? "#777" : "#fff",
+            cursor:
+              !currentDataset || isUploading || isValidating
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          {isValidating ? "Validating…" : "Validate geometry"}
+        </button>
         {isUploading && (
           <span style={{ fontSize: "0.85rem", color: "#555" }}>Uploading…</span>
         )}
@@ -88,8 +141,36 @@ function App() {
             {error}
           </span>
         )}
+        {validationError && (
+          <span style={{ fontSize: "0.85rem", color: "#b00020" }}>
+            Validation error: {validationError}
+          </span>
+        )}
       </header>
       <main style={{ flex: 1, minHeight: 0 }}>
+        {validationResult && (
+          <section
+            aria-label="Validation summary"
+            style={{
+              padding: "0.5rem 1rem",
+              borderBottom: "1px solid #eee",
+              background: "#fafafa",
+              fontSize: "0.9rem",
+            }}
+          >
+            {validationResult.issues.length === 0 ? (
+              <span style={{ color: "#2e7d32" }}>
+                No geometry issues found for this dataset.
+              </span>
+            ) : (
+              <span style={{ color: "#b00020" }}>
+                Found {validationResult.issues.length} geometry issue
+                {validationResult.issues.length > 1 ? "s" : ""}. See details in
+                the API response or future UI.
+              </span>
+            )}
+          </section>
+        )}
         <MapViewer
           datasetId={currentDataset?.dataset_id}
           bounds={currentDataset?.bounds ?? null}
