@@ -119,3 +119,31 @@ def test_get_validate_success(client):
     assert data["dataset_id"] == dataset_id
     assert "issues" in data
     assert isinstance(data["issues"], list)
+
+
+def test_get_dataset_geojson_success(client):
+    """GET /datasets/{dataset_id}/geojson returns GeoJSON for uploaded dataset."""
+    path = Path(__file__).parent.parent / "resources" / "sample.geojson"
+    if not path.exists():
+        pytest.skip("sample.geojson not found")
+    upload = client.post(
+        "/api/v1/upload",
+        files={"file": ("sample.geojson", path.read_bytes(), "application/geo+json")},
+    )
+    assert upload.status_code == 200
+    dataset_id = upload.json()["dataset_id"]
+
+    r = client.get(f"/api/v1/datasets/{dataset_id}/geojson")
+    assert r.status_code == 200
+    # FastAPI's TestClient exposes content-type header here
+    content_type = r.headers.get("content-type", "")
+    assert "application/geo+json" in content_type
+
+
+def test_get_dataset_geojson_not_found(client):
+    """GET /datasets/{dataset_id}/geojson for unknown id returns 404 with DATASET_NOT_FOUND."""
+    r = client.get("/api/v1/datasets/00000000-0000-0000-0000-000000000000/geojson")
+    assert r.status_code == 404
+    detail = r.json().get("detail")
+    code = detail.get("code") if isinstance(detail, dict) else r.json().get("code")
+    assert code == ErrorCode.DATASET_NOT_FOUND

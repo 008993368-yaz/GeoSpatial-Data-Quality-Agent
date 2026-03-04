@@ -3,7 +3,16 @@ from io import BytesIO
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from api.models import ErrorCode, ErrorResponse, GeometryIssue, UploadResponse, ValidateRequest, ValidationResult
+from fastapi.responses import FileResponse
+
+from api.models import (
+    ErrorCode,
+    ErrorResponse,
+    GeometryIssue,
+    UploadResponse,
+    ValidateRequest,
+    ValidationResult,
+)
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
@@ -160,6 +169,48 @@ async def get_validation_results(dataset_id: str):
         )
     issues = run_geometry_validation(path)
     return ValidationResult(dataset_id=dataset_id, issues=[_issue_to_model(i) for i in issues])
+
+
+@router.get(
+    "/datasets/{dataset_id}/geojson",
+    responses={
+        200: {"description": "GeoJSON for the uploaded dataset"},
+        404: {"description": "Dataset not found", "model": ErrorResponse},
+        400: {"description": "Dataset is not a GeoJSON-based file", "model": ErrorResponse},
+    },
+)
+async def get_dataset_geojson(dataset_id: str):
+    """
+    Return the GeoJSON representation of an uploaded dataset.
+
+    Currently supports datasets whose primary vector file is .geojson or .json.
+    This is used by the frontend map viewer to display the uploaded layer.
+    """
+    path = get_primary_vector_path(dataset_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Dataset not found or no vector file: {dataset_id}",
+                "code": ErrorCode.DATASET_NOT_FOUND,
+            },
+        )
+
+    suffix = path.suffix.lower()
+    if suffix not in (".geojson", ".json"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "detail": "Dataset is not a GeoJSON-based file.",
+                "code": ErrorCode.INVALID_FILE_TYPE,
+            },
+        )
+
+    return FileResponse(
+        path,
+        media_type="application/geo+json",
+        filename=path.name,
+    )
 
 
 def _issue_to_model(d: dict) -> GeometryIssue:
