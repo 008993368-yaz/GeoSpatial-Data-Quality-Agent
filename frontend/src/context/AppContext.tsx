@@ -16,6 +16,8 @@ type AppContextValue = {
   isValidating: boolean;
   validationError: string | null;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  /** Upload a single file (used by file input and drag-drop). */
+  handleUploadFile: (file: File) => Promise<void>;
   handleValidate: () => Promise<void>;
   clearValidation: () => void;
 };
@@ -30,9 +32,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function handleUploadFile(file: File) {
     setError(null);
     setIsUploading(true);
     try {
@@ -53,8 +53,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setError(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setIsUploading(false);
-      event.target.value = "";
     }
+  }
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await handleUploadFile(file);
+    event.target.value = "";
   }
 
   async function handleValidate() {
@@ -95,6 +101,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isValidating,
         validationError,
         handleFileChange,
+        handleUploadFile,
         handleValidate,
         clearValidation,
       }}
