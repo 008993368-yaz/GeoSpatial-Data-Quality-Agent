@@ -70,13 +70,18 @@ body {
   outline-offset: var(--focus-ring-offset);
 }
 
-/* Layout */
+/* Layout (Calcite Shell provides main structure; keep utilities for non-shell pages) */
 .app-layout {
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+/* Main content area inside Calcite Shell */
+calcite-shell .app-main {
+  padding: 1rem;
 }
 
 .app-header {
@@ -135,10 +140,34 @@ body {
   overflow: auto;
 }
 
+/* Calcite Shell panel content */
+.app-panel-content {
+  padding: 1rem;
+}
+
+.app-panel-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.app-panel-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6a6a6a;
+}
+
 /* Pages */
 .page-section {
   padding: 1rem;
   max-width: 60rem;
+  min-height: 20rem;
+}
+
+.page-section-description {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #404040;
 }
 
 .page-section--map {
@@ -167,6 +196,45 @@ body {
 
 .upload-input {
   font-size: 0.9rem;
+}
+
+/* FileUploader (drag-drop + file input) */
+.file-uploader {
+  margin-top: 0.5rem;
+}
+
+.file-uploader-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.file-uploader-dropzone--active {
+  border-color: #0079c1;
+  background: #e8f4fc;
+}
+
+.file-uploader-dropzone-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #404040;
+}
+
+.file-uploader-dropzone-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6a6a6a;
+}
+
+.file-uploader calcite-alert {
+  margin-top: 1rem;
 }
 
 .status-message {
