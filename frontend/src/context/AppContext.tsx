@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { ValidationResult } from "../types/api";
+import type { GeometryIssue, ValidationResult } from "../types/api";
 
 export type UploadResponse = {
   dataset_id: string;
@@ -13,6 +13,8 @@ type AppContextValue = {
   isUploading: boolean;
   error: string | null;
   validationResult: ValidationResult | null;
+  /** Stored validation issues (for map/symbolize). Empty when no result or no issues. */
+  validationIssues: GeometryIssue[];
   isValidating: boolean;
   validationError: string | null;
   handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
@@ -98,6 +100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isUploading,
         error,
         validationResult,
+        validationIssues: validationResult?.issues ?? [],
         isValidating,
         validationError,
         handleFileChange,
