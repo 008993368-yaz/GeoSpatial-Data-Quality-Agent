@@ -263,6 +263,14 @@ calcite-shell .app-main {
   margin-top: 1rem;
 }
 
+.upload-validate-block {
+  margin-top: 1rem;
+}
+
+.validation-summary-inline {
+  margin-top: 0.5rem;
+}
+
 .empty-state {
   margin: 0;
   padding: 1rem;
