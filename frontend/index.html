@@ -4,9 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GeoSpatial Data Quality Agent</title>
+    <!-- Import map: load @arcgis/core from CDN at runtime (avoids Vite/Rollup resolve issues in build) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@arcgis/core/": "https://js.arcgis.com/4.28/@arcgis/core/"
+        }
+      }
+    </script>
+    <!-- ArcGIS theme: load as stylesheet (do not import as JS module or browser gets MIME type error) -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/@arcgis/core/assets/esri/themes/light/main.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <p style="padding: 1rem; font-family: system-ui, sans-serif;">Loading…</p>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

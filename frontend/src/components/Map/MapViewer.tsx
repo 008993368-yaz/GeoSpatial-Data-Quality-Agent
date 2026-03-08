@@ -8,7 +8,7 @@ import Zoom from "@arcgis/core/widgets/Zoom.js";
 
 import { defaultCenter, defaultZoom } from "../../services/mapService";
 
-import "@arcgis/core/assets/esri/themes/light/main.css";
+/* ArcGIS theme loaded via <link> in index.html to avoid loading CSS as module (MIME type error) */
 
 const apiKey = import.meta.env.VITE_ARCGIS_API_KEY;
 if (apiKey) {
