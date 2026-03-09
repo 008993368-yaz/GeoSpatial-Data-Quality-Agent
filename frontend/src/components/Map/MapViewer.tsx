@@ -24,6 +24,12 @@ const DATASET_LAYER_ID = "dataset-layer";
 const ISSUES_LAYER_ID = "validation-issues-layer";
 const WKID_WGS84 = 4326;
 
+function escapeHtml(s: string): string {
+  const el = document.createElement("div");
+  el.textContent = s;
+  return el.innerHTML;
+}
+
 export type MapViewerProps = {
   datasetId?: string;
   bounds?: number[] | null;
@@ -60,6 +66,34 @@ export function MapViewer({ datasetId, bounds, layerTitle, validationIssues }: M
 
     const zoom = new Zoom({ view, layout: "vertical" });
     view.ui.add(zoom, "top-right");
+
+    view.on("click", async (event) => {
+      const hit = await view.hitTest(event);
+      const issuesLayer = issuesLayerRef.current;
+      if (!issuesLayer) return;
+      let graphic: __esri.Graphic | null = null;
+      for (const r of hit.results) {
+        const g = (r as { graphic?: __esri.Graphic }).graphic;
+        if (g && g.layer === issuesLayer) {
+          graphic = g;
+          break;
+        }
+      }
+      if (!graphic?.attributes) return;
+      const { type, severity, description } = graphic.attributes as {
+        type?: string;
+        severity?: string;
+        description?: string;
+      };
+      const safeType = escapeHtml(String(type ?? ""));
+      const safeSeverity = escapeHtml(String(severity ?? ""));
+      const safeDesc = escapeHtml(String(description ?? ""));
+      view.popup.open({
+        location: graphic.geometry as __esri.Point,
+        title: "Validation issue",
+        content: `<p><strong>Type:</strong> ${safeType}</p><p><strong>Severity:</strong> ${safeSeverity}</p><p><strong>Description:</strong> ${safeDesc || "—"}</p>`,
+      });
+    });
 
     return () => {
       if (viewRef.current) {
