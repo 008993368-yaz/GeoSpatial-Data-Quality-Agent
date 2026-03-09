@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from api.models import ErrorCode, ErrorResponse, GeometryIssue, UploadResponse, ValidateRequest, ValidationResult
+from api.models import ErrorCode, ErrorResponse, UploadResponse, ValidateRequest, ValidationResult
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
@@ -15,7 +15,7 @@ from services.file_handler import (
 )
 from services.geojson_parser import parse_geojson_metadata
 from services.shapefile_parser import parse_shapefile_metadata
-from agents.geometry_agent import validate as run_geometry_validation
+from agents.orchestrator import empty_state, validation_graph
 
 router = APIRouter()
 
@@ -120,9 +120,9 @@ async def upload_dataset(file: UploadFile = File(..., description="Shapefile, Ge
 )
 async def validate_dataset(body: ValidateRequest):
     """
-    Run geometry validation on an uploaded dataset (by dataset_id).
-    Checks: null/empty geometry, invalid geometry, self-intersection.
-    Returns list of issues with feature_id, type, severity, location, description.
+    Run the LangGraph validation workflow on an uploaded dataset (by dataset_id).
+    Runs geometry, attribute, topology agents and generate_recommendations;
+    routes by severity (critical -> apply_corrections). Returns issues for frontend.
     """
     path = get_primary_vector_path(body.dataset_id)
     if path is None or not path.exists():
@@ -133,8 +133,10 @@ async def validate_dataset(body: ValidateRequest):
                 "code": ErrorCode.DATASET_NOT_FOUND,
             },
         )
-    issues = run_geometry_validation(path)
-    return ValidationResult(dataset_id=body.dataset_id, issues=[_issue_to_model(i) for i in issues])
+    initial_state = empty_state(body.dataset_id, str(path))
+    final_state = validation_graph.invoke(initial_state)
+    issues = final_state.get("issues") or []
+    return ValidationResult(dataset_id=body.dataset_id, issues=issues)
 
 
 @router.get(
@@ -147,8 +149,8 @@ async def validate_dataset(body: ValidateRequest):
 )
 async def get_validation_results(dataset_id: str):
     """
-    Run geometry validation for a dataset and return results (same as POST /validate).
-    Checks: null/empty geometry, invalid geometry, self-intersection.
+    Run the LangGraph validation workflow for a dataset and return results (same as POST /validate).
+    Runs geometry, attribute, topology agents; returns issues for frontend.
     """
     path = get_primary_vector_path(dataset_id)
     if path is None or not path.exists():
@@ -159,8 +161,10 @@ async def get_validation_results(dataset_id: str):
                 "code": ErrorCode.DATASET_NOT_FOUND,
             },
         )
-    issues = run_geometry_validation(path)
-    return ValidationResult(dataset_id=dataset_id, issues=[_issue_to_model(i) for i in issues])
+    initial_state = empty_state(dataset_id, str(path))
+    final_state = validation_graph.invoke(initial_state)
+    issues = final_state.get("issues") or []
+    return ValidationResult(dataset_id=dataset_id, issues=issues)
 
 
 @router.get(
@@ -194,14 +198,3 @@ async def get_dataset_geojson(dataset_id: str):
             },
         )
     return FileResponse(path, media_type="application/geo+json")
-
-
-def _issue_to_model(d: dict) -> GeometryIssue:
-    """Convert validation issue dict to GeometryIssue model."""
-    return GeometryIssue(
-        feature_id=d.get("feature_id"),
-        type=d.get("type", ""),
-        severity=d.get("severity", ""),
-        location=d.get("location"),
-        description=d.get("description"),
-    )
