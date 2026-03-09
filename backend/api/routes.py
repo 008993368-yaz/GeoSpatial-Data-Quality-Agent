@@ -1,10 +1,11 @@
 """API route handlers."""
 from io import BytesIO
 from pathlib import Path
+import uuid
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from api.models import ErrorCode, ErrorResponse, UploadResponse, ValidateRequest, ValidationResult
+from api.models import ErrorCode, ErrorResponse, UploadResponse, ValidationJobStatus, ValidateRequest, ValidationResult
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
@@ -18,6 +19,9 @@ from services.shapefile_parser import parse_shapefile_metadata
 from agents.orchestrator import empty_state, validation_graph
 
 router = APIRouter()
+
+# In-memory store for async validation jobs (issue #64).
+_validation_jobs: dict[str, dict] = {}
 
 
 def _allowed_file(filename: str) -> bool:
@@ -165,6 +169,93 @@ async def get_validation_results(dataset_id: str):
     final_state = validation_graph.invoke(initial_state)
     issues = final_state.get("issues") or []
     return ValidationResult(dataset_id=dataset_id, issues=issues)
+
+
+@router.post(
+    "/validate/async",
+    response_model=ValidationJobStatus,
+    responses={
+        200: {"description": "Enqueue async validation job"},
+        404: {"description": "Dataset not found", "model": ErrorResponse},
+    },
+)
+async def validate_dataset_async(body: ValidateRequest, background_tasks: BackgroundTasks):
+    """
+    Run validation asynchronously using the LangGraph workflow.
+
+    Returns immediately with a job_id; the job can be polled via GET /validate/jobs/{job_id}.
+    """
+    path = get_primary_vector_path(body.dataset_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Dataset not found or no vector file: {body.dataset_id}",
+                "code": ErrorCode.DATASET_NOT_FOUND,
+            },
+        )
+
+    job_id = str(uuid.uuid4())
+    _validation_jobs[job_id] = {
+        "job_id": job_id,
+        "dataset_id": body.dataset_id,
+        "status": "pending",
+        "error": None,
+        "result": None,
+    }
+
+    def _run_job(jid: str, dataset_id: str, dataset_path: str) -> None:
+        # Mark as running
+        job = _validation_jobs.get(jid)
+        if not job:
+            return
+        job["status"] = "running"
+        try:
+            state = empty_state(dataset_id, dataset_path)
+            final_state = validation_graph.invoke(state)
+            issues = final_state.get("issues") or []
+            result = ValidationResult(dataset_id=dataset_id, issues=issues)
+            job["result"] = result
+            job["status"] = "completed"
+        except Exception as exc:  # noqa: BLE001
+            job["status"] = "failed"
+            job["error"] = str(exc)
+
+    background_tasks.add_task(_run_job, job_id, body.dataset_id, str(path))
+
+    return ValidationJobStatus(
+        job_id=job_id,
+        dataset_id=body.dataset_id,
+        status="pending",
+        error=None,
+        result=None,
+    )
+
+
+@router.get(
+    "/validate/jobs/{job_id}",
+    response_model=ValidationJobStatus,
+    responses={
+        200: {"description": "Status for an async validation job"},
+        404: {"description": "Job not found", "model": ErrorResponse},
+    },
+)
+async def get_validation_job(job_id: str):
+    """
+    Get status for an asynchronous validation job (issue #64).
+
+    When status is 'completed', the response includes the ValidationResult in 'result'.
+    """
+    job = _validation_jobs.get(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Validation job not found: {job_id}",
+                "code": "JOB_NOT_FOUND",
+            },
+        )
+    return ValidationJobStatus(**job)
 
 
 @router.get(
