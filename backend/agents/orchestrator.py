@@ -2,12 +2,16 @@
 LangGraph orchestration for the validation pipeline.
 
 Coordinates geometry, attribute, and topology agents with shared ValidationState.
-StateGraph with nodes and edges (issue #61); conditional routing in #62.
+StateGraph with nodes and edges (issue #61); conditional routing by severity (issue #62).
+
+Routing logic (after generate_recommendations):
+- If any issue has severity "critical" -> apply_corrections node (stub; apply fixes when implemented).
+- Otherwise -> END (review path; no automatic corrections).
 """
-from typing import Any
+from typing import Any, Literal
 
 from api.models import GeometryIssue
-from langgraph.graph import StateGraph
+from langgraph.graph import END, StateGraph
 
 from agents.attribute_agent import run as attribute_validation
 from agents.geometry_agent import validate as run_geometry_validation
@@ -38,19 +42,50 @@ def _geometry_validation_node(state: ValidationState) -> dict[str, Any]:
     return {"issues": existing + new_issues}
 
 
+def _apply_corrections_node(state: ValidationState) -> dict[str, Any]:
+    """
+    Node: apply user-approved corrections to the dataset.
+    Stub: no-op until correction application is implemented (Phase 2/3).
+    """
+    return {}
+
+
+def _route_by_severity(state: ValidationState) -> Literal["critical", "review"]:
+    """
+    Conditional routing after generate_recommendations.
+
+    - critical: at least one issue has severity "critical" -> run apply_corrections.
+    - review: otherwise -> END (workflow finishes; user can review issues without auto-apply).
+    """
+    issues = state.get("issues") or []
+    for issue in issues:
+        if getattr(issue, "severity", "").lower() == "critical":
+            return "critical"
+    return "review"
+
+
 def _build_graph() -> Any:
-    """Build and compile the validation StateGraph."""
+    """Build and compile the validation StateGraph with conditional routing by severity."""
     workflow_builder = StateGraph(ValidationState)
 
     workflow_builder.add_node("geometry_validation", _geometry_validation_node)
     workflow_builder.add_node("attribute_validation", attribute_validation)
     workflow_builder.add_node("topology_validation", topology_validation)
     workflow_builder.add_node("generate_recommendations", generate_recommendations)
+    workflow_builder.add_node("apply_corrections", _apply_corrections_node)
 
     workflow_builder.set_entry_point("geometry_validation")
     workflow_builder.add_edge("geometry_validation", "attribute_validation")
     workflow_builder.add_edge("attribute_validation", "topology_validation")
     workflow_builder.add_edge("topology_validation", "generate_recommendations")
+
+    # Conditional routing: critical issues -> apply_corrections; else -> END (review)
+    workflow_builder.add_conditional_edges(
+        "generate_recommendations",
+        _route_by_severity,
+        path_map={"critical": "apply_corrections", "review": END},
+    )
+    workflow_builder.add_edge("apply_corrections", END)
 
     return workflow_builder.compile()
 
