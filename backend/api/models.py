@@ -43,6 +43,18 @@ class ValidationResult(BaseModel):
     issues: List[GeometryIssue] = Field(default_factory=list, description="List of geometry issues found")
 
 
+class ValidationJobStatus(BaseModel):
+    """Status of an asynchronous validation job."""
+
+    job_id: str = Field(..., description="Unique identifier for the validation job")
+    dataset_id: str = Field(..., description="Dataset identifier that is being validated")
+    status: str = Field(..., description="Job status: pending, running, completed, or failed")
+    error: Optional[str] = Field(None, description="Error message when status is failed")
+    result: Optional[ValidationResult] = Field(
+        None, description="ValidationResult when status is completed (may be omitted for large payloads)"
+    )
+
+
 class ValidateRequest(BaseModel):
     """Request body for POST /validate."""
 
