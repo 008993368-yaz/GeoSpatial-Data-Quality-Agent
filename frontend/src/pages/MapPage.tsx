@@ -2,7 +2,7 @@ import { MapViewer } from "../components/Map/MapViewer";
 import { useApp } from "../context/AppContext";
 
 export function MapPage() {
-  const { currentDataset } = useApp();
+  const { currentDataset, validationIssues } = useApp();
 
   return (
     <section className="page-section page-section--map" aria-labelledby="map-heading">
@@ -18,6 +18,7 @@ export function MapPage() {
           datasetId={currentDataset.dataset_id}
           bounds={currentDataset.bounds ?? null}
           layerTitle={currentDataset.filename}
+          validationIssues={validationIssues}
         />
       )}
     </section>
