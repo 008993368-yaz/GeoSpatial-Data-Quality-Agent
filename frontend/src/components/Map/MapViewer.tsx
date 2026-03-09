@@ -6,6 +6,7 @@ import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer.js";
 import Extent from "@arcgis/core/geometry/Extent.js";
 import Zoom from "@arcgis/core/widgets/Zoom.js";
 
+import type { GeometryIssue } from "../../types/api";
 import { defaultCenter, defaultZoom } from "../../services/mapService";
 
 /* ArcGIS theme loaded via <link> in index.html to avoid loading CSS as module (MIME type error) */
@@ -22,9 +23,11 @@ export type MapViewerProps = {
   bounds?: number[] | null;
   /** Optional title for the dataset layer (e.g. filename) for the layer list. */
   layerTitle?: string;
+  /** Validation issues for the current dataset (for highlight/symbolize in #53). */
+  validationIssues?: GeometryIssue[];
 };
 
-export function MapViewer({ datasetId, bounds, layerTitle }: MapViewerProps) {
+export function MapViewer({ datasetId, bounds, layerTitle, validationIssues }: MapViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const viewRef = useRef<MapView | null>(null);
