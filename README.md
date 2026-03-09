@@ -82,10 +82,11 @@ An intelligent agent system that combines traditional GIS validation with AI-pow
 - **Human-in-the-Loop**: Interactive review and approval workflow
 
 ### 🎨 **Professional UI/UX**
-- **Interactive Map**: Visualize problematic features with ArcGIS JavaScript API
+- **Interactive Map**: Visualize uploaded datasets and validation issues with ArcGIS JavaScript API; red markers show issue locations; click a marker for a popup with type, severity, and description
+- **Validate from Map or Upload**: Run validation from the Upload tab or the Map tab; results update the map automatically
 - **ESRI Calcite Components**: Production-ready, accessible design system
 - **Real-time Updates**: Live validation status and progress tracking
-- **Comprehensive Reports**: Downloadable quality assessment documents
+- **Comprehensive Reports**: Downloadable quality assessment documents (planned)
 
 ### 📊 **Support for Multiple Formats**
 - Shapefile (.shp)
@@ -340,6 +341,11 @@ yarn dev
 ```
 
 Access the application at: `http://localhost:5173`
+
+**Basic workflow (Phase 1):**
+1. **Upload** — On the Upload tab, choose a Shapefile or GeoJSON file. After upload, the current dataset is set.
+2. **Validate** — Click "Validate geometry" (Upload tab) or "Validate dataset" (Map tab) to run geometry validation. Results appear in the UI.
+3. **Map** — Open the Map tab to view the dataset. If validation has been run, red markers show issue locations; click a marker to see type, severity, and description in a popup.
 
 ### **Production Mode**
 
@@ -709,11 +715,12 @@ Located in `datasets/test/`:
 
 ## 🗺️ Roadmap
 
-### **Phase 1: Core Functionality** ✅ (Weeks 1-4)
-- [ ] File ingestion (Shapefile, GeoJSON)
-- [ ] Basic geometry validation
-- [ ] Map-based preview
-- [ ] Simple UI with Calcite
+### **Phase 1: Core Functionality** ✅ Completed
+- [x] File ingestion (Shapefile, GeoJSON)
+- [x] Basic geometry validation (API + UI trigger)
+- [x] Map-based preview (dataset layer, zoom/pan, layer visibility, extent on load)
+- [x] Validation issues on map (red markers at issue locations, click popup for details)
+- [x] Simple UI with Calcite (Upload, Map, Status pages; validate button on Upload and Map)
 
 ### **Phase 2: Agent System** 🚧 (Weeks 5-8)
 - [ ] LangGraph workflow implementation
