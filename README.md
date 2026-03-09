@@ -496,7 +496,8 @@ workflow.add_edge("geometry_validation", "attribute_validation")
 workflow.add_edge("attribute_validation", "topology_validation")
 workflow.add_edge("topology_validation", "generate_recommendations")
 
-# Conditional routing based on severity
+# Conditional routing based on severity (see agents/orchestrator.py)
+# route_by_severity: if any issue has severity "critical" -> apply_corrections; else -> END (review).
 workflow.add_conditional_edges(
     "generate_recommendations",
     route_by_severity,
