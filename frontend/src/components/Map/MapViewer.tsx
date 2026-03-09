@@ -3,6 +3,10 @@ import esriConfig from "@arcgis/core/config.js";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer.js";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
+import Graphic from "@arcgis/core/Graphic.js";
+import Point from "@arcgis/core/geometry/Point.js";
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol.js";
 import Extent from "@arcgis/core/geometry/Extent.js";
 import Zoom from "@arcgis/core/widgets/Zoom.js";
 
@@ -17,6 +21,8 @@ if (apiKey) {
 }
 
 const DATASET_LAYER_ID = "dataset-layer";
+const ISSUES_LAYER_ID = "validation-issues-layer";
+const WKID_WGS84 = 4326;
 
 export type MapViewerProps = {
   datasetId?: string;
@@ -32,6 +38,7 @@ export function MapViewer({ datasetId, bounds, layerTitle, validationIssues }: M
   const mapRef = useRef<Map | null>(null);
   const viewRef = useRef<MapView | null>(null);
   const layerRef = useRef<GeoJSONLayer | null>(null);
+  const issuesLayerRef = useRef<GraphicsLayer | null>(null);
   const [datasetLayerVisible, setDatasetLayerVisible] = useState(true);
 
   // Initialize map and view once (zoom/pan enabled by default on MapView)
@@ -63,6 +70,10 @@ export function MapViewer({ datasetId, bounds, layerTitle, validationIssues }: M
       if (layerRef.current) {
         layerRef.current.destroy();
         layerRef.current = null;
+      }
+      if (issuesLayerRef.current) {
+        issuesLayerRef.current.destroy();
+        issuesLayerRef.current = null;
       }
     };
   }, []);
@@ -116,6 +127,59 @@ export function MapViewer({ datasetId, bounds, layerTitle, validationIssues }: M
       });
     }
   }, [datasetId, bounds?.join(","), layerTitle]);
+
+  // Graphics layer: show validation issue locations as points (Option B for #53)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Remove existing issues layer
+    if (issuesLayerRef.current) {
+      map.remove(issuesLayerRef.current);
+      issuesLayerRef.current.destroy();
+      issuesLayerRef.current = null;
+    }
+
+    const issues = validationIssues ?? [];
+    const withLocation = issues.filter(
+      (i): i is GeometryIssue & { location: number[] } =>
+        Array.isArray(i.location) && i.location.length >= 2
+    );
+    if (withLocation.length === 0) return;
+
+    const symbol = new SimpleMarkerSymbol({
+      color: [220, 53, 69, 0.9],
+      outline: { color: [180, 40, 50], width: 1.5 },
+      size: 12,
+    });
+
+    const graphics = withLocation.map(
+      (issue) =>
+        new Graphic({
+          geometry: new Point({
+            longitude: issue.location[0],
+            latitude: issue.location[1],
+            spatialReference: { wkid: WKID_WGS84 },
+          }),
+          symbol,
+          attributes: {
+            feature_id: issue.feature_id,
+            type: issue.type,
+            severity: issue.severity,
+            description: issue.description ?? "",
+          },
+        })
+    );
+
+    const issuesLayer = new GraphicsLayer({
+      id: ISSUES_LAYER_ID,
+      title: "Validation issues",
+      listMode: "show",
+    });
+    issuesLayer.addMany(graphics);
+    map.add(issuesLayer);
+    issuesLayerRef.current = issuesLayer;
+  }, [validationIssues]);
 
   // Sync visibility toggle to layer when layer exists
   useEffect(() => {
