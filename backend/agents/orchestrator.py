@@ -4,6 +4,12 @@ LangGraph orchestration for the validation pipeline.
 Coordinates geometry, attribute, and topology agents with shared ValidationState.
 StateGraph with nodes and edges (issue #61); conditional routing by severity (issue #62).
 
+Attribute Agent (issue #72, #73): The attribute_validation node is the LLM-backed
+implementation (agents.attribute_agent.run). It appends attribute issues to state["issues"]
+with the same GeometryIssue shape (type=attribute_*, severity, etc.). All issues—geometry,
+attribute, and topology—are accumulated in state["issues"] and considered by
+_route_by_severity for conditional routing.
+
 Routing logic (after generate_recommendations):
 - If any issue has severity "critical" -> apply_corrections node (stub; apply fixes when implemented).
 - Otherwise -> END (review path; no automatic corrections).
@@ -54,6 +60,7 @@ def _route_by_severity(state: ValidationState) -> Literal["critical", "review"]:
     """
     Conditional routing after generate_recommendations.
 
+    Considers all issues in state["issues"] (geometry, attribute, topology).
     - critical: at least one issue has severity "critical" -> run apply_corrections.
     - review: otherwise -> END (workflow finishes; user can review issues without auto-apply).
     """
