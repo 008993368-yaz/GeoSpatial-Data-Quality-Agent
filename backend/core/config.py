@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,14 @@ class Settings(BaseSettings):
     # Token/cost optimization (issue #70): limit data sent per request
     # Max attribute columns to include (None = all). Reduces prompt size for wide tables.
     ATTRIBUTE_MAX_FIELDS: int | None = None
+
+    @field_validator("ATTRIBUTE_MAX_FIELDS", mode="before")
+    @classmethod
+    def _empty_str_to_none(cls, v: object) -> object:
+        if v == "":
+            return None
+        return v
+
     # Max records embedded in the prompt (subset of sample). Lower = cheaper, less context.
     ATTRIBUTE_MAX_RECORDS_IN_PROMPT: int = 10
     # Max values per field in the per-field summary. Lower = smaller prompt.

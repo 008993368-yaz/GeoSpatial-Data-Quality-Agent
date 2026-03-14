@@ -486,57 +486,58 @@ geospatial-data-quality-agent/
 
 ## 🔄 Agent Workflow
 
+The validation pipeline is implemented in `backend/agents/orchestrator.py`. The graph runs geometry validation → attribute validation → topology validation → generate recommendations, then routes by severity (any **critical** issue → apply_corrections; otherwise → END).
+
 ### **Validation Pipeline**
 
 ```python
-# Simplified workflow example
+# Simplified workflow example (actual implementation: agents/orchestrator.py)
 from langgraph.graph import StateGraph
 
-# Define validation state
+# Define validation state (see agents/state.py)
 class ValidationState(TypedDict):
-    dataset: Any
-    issues: List[Issue]
-    corrections: List[Correction]
+    dataset_id: str
+    dataset_path: Optional[str]
+    issues: List[GeometryIssue]  # geometry, attribute, and topology issues
+    corrections: List[dict]
     user_approvals: List[bool]
 
 # Build agent graph
 workflow = StateGraph(ValidationState)
 
-# Add agent nodes
-workflow.add_node("geometry_validation", GeometryAgent.validate)
-workflow.add_node("attribute_validation", AttributeAgent.validate)
-workflow.add_node("topology_validation", TopologyAgent.validate)
-workflow.add_node("generate_recommendations", RecommendationAgent.suggest)
-workflow.add_node("apply_corrections", CorrectionAgent.apply)
+# Add agent nodes (geometry_validation, attribute_validation, topology_validation, etc.)
+workflow.add_node("geometry_validation", _geometry_validation_node)
+workflow.add_node("attribute_validation", attribute_validation)  # agents.attribute_agent.run
+workflow.add_node("topology_validation", topology_validation)
+workflow.add_node("generate_recommendations", generate_recommendations)
+workflow.add_node("apply_corrections", _apply_corrections_node)
 
-# Define workflow edges
 workflow.set_entry_point("geometry_validation")
 workflow.add_edge("geometry_validation", "attribute_validation")
 workflow.add_edge("attribute_validation", "topology_validation")
 workflow.add_edge("topology_validation", "generate_recommendations")
 
-# Conditional routing based on severity (see agents/orchestrator.py)
-# route_by_severity: if any issue has severity "critical" -> apply_corrections; else -> END (review).
-workflow.add_conditional_edges(
-    "generate_recommendations",
-    route_by_severity,
-    {
-        "critical": "apply_corrections",
-        "review": END
-    }
-)
-
-# Compile and run
+# Conditional routing: all issues (geometry + attribute + topology) are considered
+workflow.add_conditional_edges("generate_recommendations", _route_by_severity, ...)
 app = workflow.compile()
 result = app.invoke(initial_state)
 ```
+
+### **Attribute Agent implementation**
+
+The **Attribute Agent** node is the LLM-backed implementation (`agents/attribute_agent.run`, issue #72/#73). It:
+
+1. Reads `state["dataset_path"]` and loads the dataset with GeoPandas.
+2. Extracts sampled attribute data (no geometry) via `services.attribute_extractor` (row sample + optional field limit from config).
+3. Calls `services.llm_service.validate_attributes_with_llm` to detect inconsistencies, typos, naming variations, missing values, and outliers.
+4. Appends results to **state["issues"]** as `GeometryIssue` with `type="attribute_<issue_type>"` (e.g. `attribute_typo`), `severity`, `description` (field + suggestion), and `location=None`. Geometry, attribute, and topology issues are accumulated in the same list; conditional routing by severity considers all of them.
 
 ### **Agent Responsibilities**
 
 | Agent | Input | Output | Tools Used |
 |-------|-------|--------|------------|
-| **Geometry Agent** | Feature geometries | Invalid geometry list | ArcGIS API, Shapely |
-| **Attribute Agent** | Feature attributes | Inconsistency report | GPT-4, pandas |
+| **Geometry Agent** | Feature geometries | Invalid geometry list | Shapely, core.validation |
+| **Attribute Agent** | Feature attributes (sampled) | Inconsistency report (GeometryIssue) | GPT-4 (LangChain), attribute_extractor, llm_service |
 | **Topology Agent** | Spatial relationships | Topology violations | GeoPandas, ArcGIS |
 | **Recommendation Agent** | All issues | Correction suggestions | GPT-4, domain knowledge |
 
