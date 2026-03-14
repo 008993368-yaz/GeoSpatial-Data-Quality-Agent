@@ -79,8 +79,13 @@ def run(
         return {"issues": existing}
 
     n = sample_size if sample_size is not None else settings.ATTRIBUTE_SAMPLE_SIZE
-    records = get_attribute_records(gdf, sample_size=n, random_state=_ATTRIBUTE_SAMPLE_RANDOM_STATE)
-    per_field = get_attribute_columns(gdf, sample_size=n, random_state=_ATTRIBUTE_SAMPLE_RANDOM_STATE)
+    max_fields = getattr(settings, "ATTRIBUTE_MAX_FIELDS", None)
+    records = get_attribute_records(
+        gdf, sample_size=n, random_state=_ATTRIBUTE_SAMPLE_RANDOM_STATE, max_fields=max_fields
+    )
+    per_field = get_attribute_columns(
+        gdf, sample_size=n, random_state=_ATTRIBUTE_SAMPLE_RANDOM_STATE, max_fields=max_fields
+    )
 
     if not records and not per_field:
         return {"issues": existing}

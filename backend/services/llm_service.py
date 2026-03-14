@@ -74,22 +74,43 @@ def _default_llm(config: Optional[AttributeValidationConfig] = None) -> Supports
 def build_attribute_validation_prompt(
     attribute_records: List[Dict[str, Any]],
     per_field_values: Optional[Dict[str, List[Any]]] = None,
+    *,
+    max_records_in_prompt: Optional[int] = None,
+    max_values_per_field: Optional[int] = None,
+    max_fields: Optional[int] = None,
 ) -> str:
     """
-    Build a prompt for GPT-4 to detect attribute issues.
+    Build a prompt for GPT-4 to detect attribute issues (issue #70: token limits).
+
+    Uses settings.ATTRIBUTE_MAX_RECORDS_IN_PROMPT and ATTRIBUTE_MAX_VALUES_PER_FIELD
+    when the optional limits are not provided, to keep prompt size and cost manageable.
 
     Args:
         attribute_records: List of per-feature dicts, usually including \"feature_id\" and
             attribute columns (from services.attribute_extractor.get_attribute_records).
         per_field_values: Optional mapping of field -> list of values across features
             (from get_attribute_columns), useful for outlier / distribution analysis.
+        max_records_in_prompt: Cap on records embedded in prompt; default from settings.
+        max_values_per_field: Cap on values per field in prompt; default from settings.
+        max_fields: If set, only first N fields in per_field_values; default from settings.
 
     Returns:
         A string prompt instructing the model to return JSON with an \"issues\" list.
     """
+    n_rec = max_records_in_prompt if max_records_in_prompt is not None else getattr(
+        settings, "ATTRIBUTE_MAX_RECORDS_IN_PROMPT", 10
+    )
+    n_val = max_values_per_field if max_values_per_field is not None else getattr(
+        settings, "ATTRIBUTE_MAX_VALUES_PER_FIELD", 15
+    )
+    n_fld = max_fields if max_fields is not None else getattr(settings, "ATTRIBUTE_MAX_FIELDS", None)
+    pf = per_field_values or {}
+    if n_fld is not None and n_fld > 0:
+        keys = list(pf.keys())[:n_fld]
+        pf = {k: pf[k] for k in keys if k in pf}
     examples = {
-        "records": attribute_records[:5],
-        "per_field_values": {k: v[:10] for k, v in (per_field_values or {}).items()},
+        "records": attribute_records[:n_rec],
+        "per_field_values": {k: v[:n_val] for k, v in pf.items()},
     }
     instructions = (
         "You are a geospatial data quality assistant. "
