@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     # Higher = better coverage, more tokens/cost. Default 500 balances both.
     ATTRIBUTE_SAMPLE_SIZE: int = 500
 
+    # LLM / GPT-4 configuration for attribute validation (issue #71)
+    # API key is read from OPENAI_API_KEY env var by default; model can be overridden.
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MAX_TOKENS: int = 2048
+
     # Allowed geospatial file extensions (lowercase)
     ALLOWED_EXTENSIONS: List[str] = [
         ".shp",
