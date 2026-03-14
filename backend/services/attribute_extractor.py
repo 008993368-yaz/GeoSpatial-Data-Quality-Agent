@@ -37,6 +37,7 @@ def get_attribute_records(
     gdf: gpd.GeoDataFrame,
     sample_size: Optional[int] = None,
     random_state: Optional[int] = None,
+    max_fields: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
     Extract attribute data as a list of per-feature records (no geometry).
@@ -48,6 +49,7 @@ def get_attribute_records(
         gdf: GeoDataFrame (geometry column is dropped).
         sample_size: Max number of rows to return. If None, uses DEFAULT_ATTRIBUTE_SAMPLE_SIZE.
         random_state: Seed for reproducible sampling.
+        max_fields: If set, only the first N attribute columns are included (issue #70).
 
     Returns:
         List of dicts; each dict has feature_id and attribute key-value pairs.
@@ -59,6 +61,8 @@ def get_attribute_records(
     # Drop geometry so we don't send WKB/WKT to the LLM
     geom_col = gdf.geometry.name if hasattr(gdf, "geometry") and gdf.geometry is not None else None
     cols = [c for c in gdf.columns if c != geom_col]
+    if max_fields is not None and max_fields > 0:
+        cols = cols[:max_fields]
     if not cols:
         return []
 
@@ -81,6 +85,7 @@ def get_attribute_columns(
     gdf: gpd.GeoDataFrame,
     sample_size: Optional[int] = None,
     random_state: Optional[int] = None,
+    max_fields: Optional[int] = None,
 ) -> Dict[str, List[Any]]:
     """
     Extract attribute data as per-field value lists (no geometry).
@@ -92,6 +97,7 @@ def get_attribute_columns(
         gdf: GeoDataFrame (geometry column is dropped).
         sample_size: Max number of rows per column. If None, uses DEFAULT_ATTRIBUTE_SAMPLE_SIZE.
         random_state: Seed for reproducible sampling.
+        max_fields: If set, only the first N attribute columns (issue #70).
 
     Returns:
         Dict mapping each attribute column name to a list of values (sampled).
@@ -102,6 +108,8 @@ def get_attribute_columns(
     n = sample_size if sample_size is not None else DEFAULT_ATTRIBUTE_SAMPLE_SIZE
     geom_col = gdf.geometry.name if hasattr(gdf, "geometry") and gdf.geometry is not None else None
     cols = [c for c in gdf.columns if c != geom_col]
+    if max_fields is not None and max_fields > 0:
+        cols = cols[:max_fields]
     if not cols:
         return {}
 

@@ -319,6 +319,25 @@ VITE_MAP_ZOOM_LEVEL=10
 - ~$0.01 - $0.05 per validation run (depending on dataset size)
 - Average thesis project: $5-20 total
 
+### **AI & LLM: token and cost optimization (attribute validation)**
+
+Attribute validation uses GPT-4 to detect inconsistencies, typos, and outliers. To keep token usage and cost manageable on large datasets, the following settings (in `backend/.env` or `core.config`) apply:
+
+| Setting | Default | Description |
+|--------|---------|-------------|
+| `ATTRIBUTE_SAMPLE_SIZE` | 500 | Max rows sampled from the dataset before sending to the LLM. |
+| `ATTRIBUTE_MAX_FIELDS` | (none) | If set, only the first N attribute columns are sent. Use for very wide tables. |
+| `ATTRIBUTE_MAX_RECORDS_IN_PROMPT` | 10 | Max records embedded in the prompt (subset of the sample). |
+| `ATTRIBUTE_MAX_VALUES_PER_FIELD` | 15 | Max values per field in the per-field summary. |
+| `OPENAI_MAX_TOKENS` | 2048 | Max tokens for the model response. |
+
+**Trade-offs:**
+- **Larger sample size** → better coverage (more features seen) but more tokens and cost. Default 500 balances coverage and cost.
+- **Smaller `ATTRIBUTE_MAX_RECORDS_IN_PROMPT` / `ATTRIBUTE_MAX_VALUES_PER_FIELD`** → smaller prompts and lower cost; the LLM sees less context per request.
+- **`ATTRIBUTE_MAX_FIELDS`** → reduces prompt size when the dataset has many columns; set to e.g. 20 to cap the number of fields analyzed per run.
+
+**Rough token estimates:** A naive prompt sending 10,000 rows × 5 fields could be on the order of 100k+ input tokens. With defaults (500-row sample, 10 records in prompt, 15 values per field), the input is typically **~2k–5k tokens** per attribute-validation request. Use `services.attribute_llm_cost.estimate_attribute_prompt_tokens` and `estimate_naive_tokens` for your own dataset dimensions.
+
 ---
 
 ## 💻 Usage

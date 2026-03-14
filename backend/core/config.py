@@ -31,9 +31,17 @@ class Settings(BaseSettings):
     # Checks: null/empty geometry, invalid geometry, self-intersection (see core.validation)
     GEOMETRY_VALIDATION_ENABLED: bool = True
 
-    # Attribute extraction for LLM (issue #74): max rows sampled from dataset
+    # Attribute extraction for LLM (issue #74, #70): max rows sampled from dataset
     # Higher = better coverage, more tokens/cost. Default 500 balances both.
     ATTRIBUTE_SAMPLE_SIZE: int = 500
+
+    # Token/cost optimization (issue #70): limit data sent per request
+    # Max attribute columns to include (None = all). Reduces prompt size for wide tables.
+    ATTRIBUTE_MAX_FIELDS: int | None = None
+    # Max records embedded in the prompt (subset of sample). Lower = cheaper, less context.
+    ATTRIBUTE_MAX_RECORDS_IN_PROMPT: int = 10
+    # Max values per field in the per-field summary. Lower = smaller prompt.
+    ATTRIBUTE_MAX_VALUES_PER_FIELD: int = 15
 
     # LLM / GPT-4 configuration for attribute validation (issue #71)
     # API key is read from OPENAI_API_KEY env var by default; model can be overridden.

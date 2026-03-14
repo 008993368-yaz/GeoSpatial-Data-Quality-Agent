@@ -109,3 +109,15 @@ def test_load_attributes_from_path_as_columns(tmp_path):
     assert isinstance(out, dict)
     assert "geometry" not in out
     assert "name" in out and len(out["name"]) == 2
+
+
+def test_get_attribute_records_respects_max_fields():
+    """max_fields limits number of attribute columns (issue #70)."""
+    gdf = gpd.GeoDataFrame(
+        {"a": [1], "b": [2], "c": [3]},
+        geometry=[Point(0, 0)],
+    )
+    records = get_attribute_records(gdf, sample_size=10, max_fields=2)
+    assert len(records) == 1
+    assert "a" in records[0] and "b" in records[0]
+    assert "c" not in records[0]
