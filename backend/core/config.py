@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # Checks: null/empty geometry, invalid geometry, self-intersection (see core.validation)
     GEOMETRY_VALIDATION_ENABLED: bool = True
 
+    # Attribute extraction for LLM (issue #74): max rows sampled from dataset
+    # Higher = better coverage, more tokens/cost. Default 500 balances both.
+    ATTRIBUTE_SAMPLE_SIZE: int = 500
+
     # Allowed geospatial file extensions (lowercase)
     ALLOWED_EXTENSIONS: List[str] = [
         ".shp",

@@ -1,1 +1,1 @@
-# Services: file_handler, arcgis_service, llm_service
+# Services: file_handler, arcgis_service, llm_service, attribute_extractor (issue #74)
