@@ -17,6 +17,12 @@ export function AppLayout() {
           <CalciteNavigationLogo slot="logo" heading="GeoSpatial Data Quality Agent" />
           <nav slot="content-start" className="app-nav" aria-label="Main navigation">
             <NavLink
+              to="/dashboard"
+              className={({ isActive }) => `app-nav-link${isActive ? " app-nav-link--active" : ""}`}
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
               to="/upload"
               className={({ isActive }) => `app-nav-link${isActive ? " app-nav-link--active" : ""}`}
               end
