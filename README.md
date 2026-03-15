@@ -361,9 +361,9 @@ yarn dev
 
 Access the application at: `http://localhost:5173`
 
-**Basic workflow (Phase 1):**
+**Basic workflow (Phase 1 & 2):**
 1. **Upload** — On the Upload tab, choose a Shapefile or GeoJSON file. After upload, the current dataset is set.
-2. **Validate** — Click "Validate geometry" (Upload tab) or "Validate dataset" (Map tab) to run geometry validation. Results appear in the UI.
+2. **Validate** — Click "Validate geometry" (Upload tab) or "Validate dataset" (Map tab) to run the full pipeline: geometry, attribute (LLM), and topology validation, then recommendation generation. Results (issues and correction suggestions) appear in the API response and can be shown in the UI.
 3. **Map** — Open the Map tab to view the dataset. If validation has been run, red markers show issue locations; click a marker to see type, severity, and description in a popup.
 
 ### **Production Mode**
@@ -766,11 +766,11 @@ Located in `datasets/test/`:
 - [x] Validation issues on map (red markers at issue locations, click popup for details)
 - [x] Simple UI with Calcite (Upload, Map, Status pages; validate button on Upload and Map)
 
-### **Phase 2: Agent System** 🚧 (Weeks 5-8)
-- [ ] LangGraph workflow implementation
-- [ ] Attribute validation with LLM
-- [ ] Topology validation
-- [ ] Recommendation generation
+### **Phase 2: Agent System** ✅ Completed
+- [x] LangGraph workflow implementation
+- [x] Attribute validation with LLM
+- [x] Topology validation
+- [x] Recommendation generation
 
 ### **Phase 3: UI/UX Polish** 📅 (Weeks 9-11)
 - [ ] Full dashboard implementation
