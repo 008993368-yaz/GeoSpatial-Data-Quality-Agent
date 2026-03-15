@@ -224,11 +224,123 @@ def validate_attributes_with_llm(
     return parse_llm_attribute_issues(response)
 
 
+# --- Recommendation suggestions (issue #87) ---
+
+
+def build_recommendation_prompt(issues: List[Dict[str, Any]]) -> str:
+    """
+    Build a prompt for GPT-4 to suggest a fix (method, confidence, explanation) per issue.
+
+    Args:
+        issues: List of dicts with at least "type", "severity", "description" (and optionally
+                "feature_id"). Typically from state["issues"] converted to dict.
+
+    Returns:
+        Prompt string. Model is asked to return JSON: {"suggestions": [{ "method", "confidence", "explanation" }, ...]}
+        in the same order as the input issues.
+    """
+    if not issues:
+        return ""
+    # Compact representation for the prompt
+    compact = []
+    for i, iss in enumerate(issues):
+        if isinstance(iss, dict):
+            row = iss
+        else:
+            row = {"type": getattr(iss, "type", ""), "severity": getattr(iss, "severity", ""), "description": getattr(iss, "description") or ""}
+        compact.append({"index": i, "type": row.get("type", ""), "severity": row.get("severity", ""), "description": (row.get("description") or "")[:200]})
+    instructions = (
+        "You are a geospatial data quality assistant. For each validation issue below, "
+        "suggest a correction: a short method name (e.g. buffer(0), rename field, snap to grid), "
+        "a confidence score from 0 to 1, and a brief natural-language explanation.\n\n"
+        "Return ONLY valid JSON with this structure (one suggestion per issue, same order as input):\n"
+        "{\n  \"suggestions\": [\n"
+        "    { \"method\": \"...\", \"confidence\": 0.9, \"explanation\": \"...\" },\n"
+        "    ...\n  ]\n}\n\n"
+        "Keep method names short and actionable. Confidence should reflect how likely the fix is to resolve the issue.\n"
+    )
+    return instructions + "\nISSUES=\n" + json.dumps(compact, default=str)
+
+
+def parse_recommendation_suggestions(raw: Any) -> List[Dict[str, Any]]:
+    """
+    Parse LLM response into a list of suggestion dicts (method, confidence, explanation).
+
+    Returns one entry per suggestion; if the response has fewer than expected, missing entries
+    are filled with a default. On parse error, returns empty list.
+    """
+    if raw is None:
+        return []
+    content = raw if isinstance(raw, str) else getattr(raw, "content", None)
+    if not isinstance(content, str):
+        return []
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        return []
+    suggestions = data.get("suggestions") if isinstance(data, dict) else None
+    if not isinstance(suggestions, list):
+        return []
+    out: List[Dict[str, Any]] = []
+    default = {"method": "manual review", "confidence": 0.5, "explanation": "No suggestion generated."}
+    for item in suggestions:
+        if not isinstance(item, dict):
+            out.append(default.copy())
+            continue
+        method = item.get("method") or default["method"]
+        try:
+            conf = float(item.get("confidence", 0.5))
+            conf = max(0.0, min(1.0, conf))
+        except (TypeError, ValueError):
+            conf = 0.5
+        explanation = item.get("explanation") or default["explanation"]
+        if not isinstance(explanation, str):
+            explanation = str(explanation)[:500]
+        out.append({"method": str(method)[:200], "confidence": conf, "explanation": explanation})
+    return out
+
+
+def get_recommendation_suggestions_from_llm(
+    issues: List[Dict[str, Any]],
+    *,
+    llm: Optional[SupportsInvoke] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Call GPT-4 to get correction suggestions (method, confidence, explanation) for each issue.
+
+    Args:
+        issues: List of issue dicts (type, severity, description, ...).
+        llm: Optional LangChain-compatible LLM; if None, uses default ChatOpenAI.
+
+    Returns:
+        List of dicts with keys method, confidence, explanation (same order as issues).
+        Empty list on error or if no issues.
+    """
+    if not issues:
+        return []
+    prompt = build_recommendation_prompt(issues)
+    if not prompt:
+        return []
+    client = llm or _default_llm()
+    try:
+        response = client.invoke(prompt)
+    except Exception:
+        return []
+    parsed = parse_recommendation_suggestions(response)
+    # Pad to match issue count if LLM returned fewer
+    while len(parsed) < len(issues):
+        parsed.append({"method": "manual review", "confidence": 0.5, "explanation": "No suggestion generated."})
+    return parsed[: len(issues)]
+
+
 __all__ = [
     "AttributeIssue",
     "AttributeValidationConfig",
     "build_attribute_validation_prompt",
     "parse_llm_attribute_issues",
     "validate_attributes_with_llm",
+    "build_recommendation_prompt",
+    "parse_recommendation_suggestions",
+    "get_recommendation_suggestions_from_llm",
 ]
 

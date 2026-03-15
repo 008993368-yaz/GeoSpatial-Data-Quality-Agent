@@ -114,3 +114,33 @@ def test_validate_attributes_with_llm_empty_input_returns_empty_and_skips_llm():
     assert issues == []
     assert llm.last_prompt is None
 
+
+# --- Recommendation suggestions (issue #87) ---
+
+
+def test_build_recommendation_prompt_contains_issues():
+    """Recommendation prompt includes issue type, severity, description."""
+    from services.llm_service import build_recommendation_prompt
+
+    issues = [{"type": "self_intersection", "severity": "critical", "description": "Ring self-intersects"}]
+    prompt = build_recommendation_prompt(issues)
+    assert "self_intersection" in prompt
+    assert "critical" in prompt
+    assert "suggestions" in prompt
+    assert "method" in prompt and "confidence" in prompt and "explanation" in prompt
+
+
+def test_parse_recommendation_suggestions():
+    """Parse LLM response into list of method, confidence, explanation."""
+    from services.llm_service import parse_recommendation_suggestions
+
+    raw = '{"suggestions": [{"method": "buffer(0)", "confidence": 0.9, "explanation": "Fix invalid polygon."}]}'
+    out = parse_recommendation_suggestions(raw)
+    assert len(out) == 1
+    assert out[0]["method"] == "buffer(0)"
+    assert out[0]["confidence"] == 0.9
+    assert "Fix invalid" in out[0]["explanation"]
+
+    assert parse_recommendation_suggestions(None) == []
+    assert parse_recommendation_suggestions("not json") == []
+
