@@ -532,13 +532,27 @@ The **Attribute Agent** node is the LLM-backed implementation (`agents/attribute
 3. Calls `services.llm_service.validate_attributes_with_llm` to detect inconsistencies, typos, naming variations, missing values, and outliers.
 4. Appends results to **state["issues"]** as `GeometryIssue` with `type="attribute_<issue_type>"` (e.g. `attribute_typo`), `severity`, `description` (field + suggestion), and `location=None`. Geometry, attribute, and topology issues are accumulated in the same list; conditional routing by severity considers all of them.
 
+### **Topology Agent implementation**
+
+The **Topology Agent** node (`agents/topology_agent.run`, issue #81) is wired in the orchestrator as the `topology_validation` node (real implementation, not a stub). It:
+
+1. Reads **state["dataset_path"]** and loads the dataset with GeoPandas.
+2. Calls **core.topology.validate_topology** to detect gaps, overlaps, and connectivity issues (dangles), with optional tolerance.
+3. Converts each violation to **GeometryIssue** and appends to **state["issues"]** with:
+   - **feature_id**: index or id of the feature involved (optional **other_feature_id** in description for overlaps).
+   - **type**: `topology_gap`, `topology_overlap`, `topology_dangle` (or `topology_other`).
+   - **severity**: e.g. `warning` or `critical`.
+   - **location**: optional `[x, y]` for the violation location.
+   - **description**: human-readable text (e.g. "Overlap with feature X", "Gap in polygon coverage").
+4. Returns **{"issues": existing + new_topology_issues}**. All issues (geometry, attribute, topology) are accumulated in state and considered by **\_route_by_severity** for conditional routing (e.g. any critical topology issue routes to apply_corrections).
+
 ### **Agent Responsibilities**
 
 | Agent | Input | Output | Tools Used |
 |-------|-------|--------|------------|
 | **Geometry Agent** | Feature geometries | Invalid geometry list | Shapely, core.validation |
 | **Attribute Agent** | Feature attributes (sampled) | Inconsistency report (GeometryIssue) | GPT-4 (LangChain), attribute_extractor, llm_service |
-| **Topology Agent** | Spatial relationships | Topology violations | GeoPandas, ArcGIS |
+| **Topology Agent** | state["dataset_path"] (GeoDataFrame) | Topology violations as GeometryIssue (feature_id, type, severity, location, description) | GeoPandas, core.topology (gaps, overlaps, connectivity) |
 | **Recommendation Agent** | All issues | Correction suggestions | GPT-4, domain knowledge |
 
 ---

@@ -6,9 +6,16 @@ StateGraph with nodes and edges (issue #61); conditional routing by severity (is
 
 Attribute Agent (issue #72, #73): The attribute_validation node is the LLM-backed
 implementation (agents.attribute_agent.run). It appends attribute issues to state["issues"]
-with the same GeometryIssue shape (type=attribute_*, severity, etc.). All issues—geometry,
-attribute, and topology—are accumulated in state["issues"] and considered by
-_route_by_severity for conditional routing.
+with the same GeometryIssue shape (type=attribute_*, severity, etc.).
+
+Topology Agent (issue #81, #82): The topology_validation node uses the real implementation
+(agents.topology_agent.run), not a stub. It loads the dataset from state["dataset_path"],
+runs core.topology.validate_topology, and appends topology issues as GeometryIssue
+(type=topology_gap, topology_overlap, topology_dangle, etc.).
+
+All issues—geometry, attribute, and topology—are accumulated in state["issues"] and
+considered by _route_by_severity for conditional routing (e.g. any critical topology
+issue routes to apply_corrections).
 
 Routing logic (after generate_recommendations):
 - If any issue has severity "critical" -> apply_corrections node (stub; apply fixes when implemented).
@@ -77,7 +84,7 @@ def _build_graph() -> Any:
 
     workflow_builder.add_node("geometry_validation", _geometry_validation_node)
     workflow_builder.add_node("attribute_validation", attribute_validation)
-    workflow_builder.add_node("topology_validation", topology_validation)
+    workflow_builder.add_node("topology_validation", topology_validation)  # real impl: agents.topology_agent.run
     workflow_builder.add_node("generate_recommendations", generate_recommendations)
     workflow_builder.add_node("apply_corrections", _apply_corrections_node)
 
