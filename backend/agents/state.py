@@ -27,7 +27,7 @@ class ValidationState(TypedDict, total=False):
     """All validation issues found (geometry, attribute, topology)."""
 
     corrections: List[dict]
-    """Suggested or applied corrections. Structure TBD by recommendation agent."""
+    """Suggested corrections from Recommendation Agent. Each dict matches api.models.CorrectionSuggestion (method, confidence, explanation, issue_index)."""
 
     user_approvals: List[bool]
     """User decisions per correction (e.g. approve/reject)."""

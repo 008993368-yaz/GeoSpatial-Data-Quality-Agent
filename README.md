@@ -645,14 +645,12 @@ Response: 200 OK
 POST /corrections/apply
 Content-Type: application/json
 
-Body:
+Body (ApplyCorrectionsRequest, issue #86):
 {
-  "task_id": "uuid-string",
+  "dataset_id": "uuid-string",
   "corrections": [
-    {
-      "issue_id": "issue-1",
-      "action": "approve"
-    }
+    { "issue_index": 0, "action": "approve" },
+    { "issue_index": 1, "action": "reject" }
   ]
 }
 
@@ -663,6 +661,8 @@ Response: 200 OK
   "download_url": "/download/cleaned_dataset.zip"
 }
 ```
+
+**Suggestion schema (issue #86):** Validation results may include a `corrections` list. Each item is a **CorrectionSuggestion** (`api/models.py`): `method` (e.g. `buffer(0)`, `rename field`), `confidence` (0–1), `explanation` (natural-language), and `issue_index` (index into the `issues` list). The Recommendation Agent populates `state["corrections"]` in this shape. The apply-corrections API accepts **CorrectionAction** entries (`issue_index`, `action`: `approve` | `reject`) so the client can approve or reject each suggestion by issue index.
 
 [Full API documentation](docs/api/README.md)
 
