@@ -3,41 +3,9 @@ import { CalcitePanel } from "@esri/calcite-components-react";
 
 import { MapViewer } from "../Map/MapViewer";
 import { SummaryStats } from "./SummaryStats";
+import { IssuesPanel } from "./IssuesPanel";
 import { useApp } from "../../context/AppContext";
 import type { GeometryIssue } from "../../types/api";
-
-type IssuesPanelProps = {
-  issues: GeometryIssue[];
-  onSelectIssue: (issue: GeometryIssue | null) => void;
-};
-
-function IssuesPanel({ issues, onSelectIssue }: IssuesPanelProps) {
-  if (!issues.length) {
-    return <p className="empty-state">No validation issues yet. Run validation to see results.</p>;
-  }
-
-  return (
-    <ul className="issues-panel-list" aria-label="Validation issues">
-      {issues.map((issue, index) => (
-        <li key={index}>
-          <button
-            type="button"
-            className="issues-panel-item"
-            onClick={() => onSelectIssue(issue)}
-          >
-            <span className="issues-panel-item__type">{issue.type}</span>
-            <span className="issues-panel-item__severity">{issue.severity}</span>
-            <span className="issues-panel-item__feature">
-              {issue.feature_id !== undefined && issue.feature_id !== null
-                ? `Feature ${issue.feature_id}`
-                : "Dataset-level issue"}
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 type DetailViewProps = {
   issue: GeometryIssue | null;
