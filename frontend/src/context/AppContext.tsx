@@ -1,11 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { GeometryIssue, ValidationResult } from "../types/api";
-
-export type UploadResponse = {
-  dataset_id: string;
-  filename: string;
-  bounds?: number[] | null;
-};
+import type { GeometryIssue, ValidationResult, UploadResponse } from "../types/api";
 
 type AppContextValue = {
   currentDataset: UploadResponse | null;

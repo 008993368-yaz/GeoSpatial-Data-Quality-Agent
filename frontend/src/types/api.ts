@@ -12,3 +12,11 @@ export type ValidationResult = {
   dataset_id: string;
   issues: GeometryIssue[];
 };
+
+export type UploadResponse = {
+  dataset_id: string;
+  filename: string;
+  /** Optional total feature count for the dataset (from upload metadata). */
+  feature_count?: number;
+  bounds?: number[] | null;
+};

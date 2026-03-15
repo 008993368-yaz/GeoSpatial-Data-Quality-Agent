@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CalciteBlock, CalcitePanel } from "@esri/calcite-components-react";
+import { CalcitePanel } from "@esri/calcite-components-react";
 
 import { MapViewer } from "../Map/MapViewer";
+import { SummaryStats } from "./SummaryStats";
 import { useApp } from "../../context/AppContext";
 import type { GeometryIssue } from "../../types/api";
 
@@ -38,40 +39,6 @@ function IssuesPanel({ issues, onSelectIssue }: IssuesPanelProps) {
   );
 }
 
-type SummaryStatsProps = {
-  totalFeatures?: number | null;
-  issues: GeometryIssue[];
-};
-
-function SummaryStats({ totalFeatures, issues }: SummaryStatsProps) {
-  const totalIssues = issues.length;
-  const critical = issues.filter((i) => i.severity.toLowerCase() === "critical").length;
-  const warning = issues.filter((i) => i.severity.toLowerCase() === "warning").length;
-
-  return (
-    <div className="summary-stats">
-      <div className="summary-stats__item">
-        <span className="summary-stats__label">Total features</span>
-        <span className="summary-stats__value">
-          {typeof totalFeatures === "number" ? totalFeatures : "—"}
-        </span>
-      </div>
-      <div className="summary-stats__item">
-        <span className="summary-stats__label">Issues found</span>
-        <span className="summary-stats__value">{totalIssues}</span>
-      </div>
-      <div className="summary-stats__item">
-        <span className="summary-stats__label">Critical</span>
-        <span className="summary-stats__value">{critical}</span>
-      </div>
-      <div className="summary-stats__item">
-        <span className="summary-stats__label">Warnings</span>
-        <span className="summary-stats__value">{warning}</span>
-      </div>
-    </div>
-  );
-}
-
 type DetailViewProps = {
   issue: GeometryIssue | null;
 };
@@ -91,7 +58,7 @@ function DetailView({ issue }: DetailViewProps) {
       </p>
       {issue.feature_id !== undefined && issue.feature_id !== null && (
         <p>
-          <strong>Feature:</strong> {issue.feature_id}
+          <strong>Feature:</strong> {String(issue.feature_id)}
         </p>
       )}
       {issue.location && (
@@ -109,10 +76,11 @@ function DetailView({ issue }: DetailViewProps) {
 }
 
 export function DashboardPage() {
-  const { currentDataset, validationResult, validationIssues } = useApp();
+  const { currentDataset, validationIssues } = useApp();
   const [selectedIssue, setSelectedIssue] = useState<GeometryIssue | null>(null);
 
-  const totalFeatures = validationResult?.summary?.total_features ?? null;
+  const totalFeatures =
+    typeof currentDataset?.feature_count === "number" ? currentDataset.feature_count : null;
 
   return (
     <section className="page-section page-section--dashboard" aria-labelledby="dashboard-heading">
@@ -143,14 +111,9 @@ export function DashboardPage() {
             <SummaryStats totalFeatures={totalFeatures} issues={validationIssues} />
           </CalcitePanel>
 
-          <CalciteBlock
-            heading="Issue details"
-            className="dashboard-panel dashboard-panel--detail"
-            expanded
-            collapsible={false}
-          >
+          <CalcitePanel heading="Issue details" className="dashboard-panel dashboard-panel--detail">
             <DetailView issue={selectedIssue} />
-          </CalciteBlock>
+          </CalcitePanel>
         </div>
       )}
     </section>
