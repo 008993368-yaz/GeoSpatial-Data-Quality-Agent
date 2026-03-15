@@ -546,6 +546,15 @@ The **Topology Agent** node (`agents/topology_agent.run`, issue #81) is wired in
    - **description**: human-readable text (e.g. "Overlap with feature X", "Gap in polygon coverage").
 4. Returns **{"issues": existing + new_topology_issues}**. All issues (geometry, attribute, topology) are accumulated in state and considered by **\_route_by_severity** for conditional routing (e.g. any critical topology issue routes to apply_corrections).
 
+### **Recommendation Agent implementation**
+
+The **Recommendation Agent** node (`agents/recommendation_agent.run`, issue #87) is wired in the orchestrator as the `generate_recommendations` node (real implementation, not a stub). It:
+
+1. Reads **state["issues"]** (aggregated geometry, attribute, and topology issues).
+2. For each issue, generates a suggested fix: **method** (e.g. `buffer(0)`, "apply suggested value"), **confidence** (0–1), and **explanation** (natural-language). Uses GPT-4 when an LLM is provided; otherwise uses rule-based fallbacks (e.g. self_intersection → buffer(0), topology_overlap → merge/clip).
+3. Returns **{"corrections": [...]}** where each item is a **CorrectionSuggestion** (method, confidence, explanation, **issue_index**). state["corrections"] is merged into state; the **apply_corrections** node receives it (stub until correction application is implemented), and the validation API returns corrections in **ValidationResult.corrections**.
+4. Suggestions are compatible with the apply-corrections API (issue #86): client can approve/reject by issue_index.
+
 ### **Agent Responsibilities**
 
 | Agent | Input | Output | Tools Used |
@@ -553,7 +562,7 @@ The **Topology Agent** node (`agents/topology_agent.run`, issue #81) is wired in
 | **Geometry Agent** | Feature geometries | Invalid geometry list | Shapely, core.validation |
 | **Attribute Agent** | Feature attributes (sampled) | Inconsistency report (GeometryIssue) | GPT-4 (LangChain), attribute_extractor, llm_service |
 | **Topology Agent** | state["dataset_path"] (GeoDataFrame) | Topology violations as GeometryIssue (feature_id, type, severity, location, description) | GeoPandas, core.topology (gaps, overlaps, connectivity) |
-| **Recommendation Agent** | All issues | Correction suggestions | GPT-4, domain knowledge |
+| **Recommendation Agent** | state["issues"] (all geometry, attribute, topology issues) | state["corrections"] as CorrectionSuggestion (method, confidence, explanation, issue_index) | GPT-4 (optional), rule-based fallbacks, llm_service |
 
 ---
 

@@ -17,6 +17,14 @@ All issues—geometry, attribute, and topology—are accumulated in state["issue
 considered by _route_by_severity for conditional routing (e.g. any critical topology
 issue routes to apply_corrections).
 
+Recommendation Agent (issue #87, #88): The generate_recommendations node uses the real
+implementation (agents.recommendation_agent.run), not a stub. It reads state["issues"],
+produces one CorrectionSuggestion per issue (method, confidence, explanation, issue_index)
+via GPT-4 when an LLM is provided or rule-based fallbacks, and returns
+{"corrections": [...]}. state["corrections"] is merged into state; the apply_corrections
+node receives it (stub does not apply fixes yet), and the validation API returns
+corrections in ValidationResult.
+
 Routing logic (after generate_recommendations):
 - If any issue has severity "critical" -> apply_corrections node (stub; apply fixes when implemented).
 - Otherwise -> END (review path; no automatic corrections).
@@ -85,7 +93,7 @@ def _build_graph() -> Any:
     workflow_builder.add_node("geometry_validation", _geometry_validation_node)
     workflow_builder.add_node("attribute_validation", attribute_validation)
     workflow_builder.add_node("topology_validation", topology_validation)  # real impl: agents.topology_agent.run
-    workflow_builder.add_node("generate_recommendations", generate_recommendations)
+    workflow_builder.add_node("generate_recommendations", generate_recommendations)  # real impl: agents.recommendation_agent.run
     workflow_builder.add_node("apply_corrections", _apply_corrections_node)
 
     workflow_builder.set_entry_point("geometry_validation")
