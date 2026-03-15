@@ -10,7 +10,7 @@ import type { GeometryIssue } from "../../types/api";
 
 export type IssuesPanelProps = {
   issues: GeometryIssue[];
-  onSelectIssue: (issue: GeometryIssue | null) => void;
+  onSelectIssueIndex: (index: number | null) => void;
 };
 
 type TypeFilter = "all" | "geometry" | "attribute" | "topology";
@@ -22,13 +22,15 @@ function categorizeType(type: string): TypeFilter {
   return "geometry";
 }
 
-export function IssuesPanel({ issues, onSelectIssue }: IssuesPanelProps) {
+export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const [featureFilter, setFeatureFilter] = useState<string>("");
 
-  const filteredIssues = useMemo(() => {
-    return issues.filter((issue) => {
+  const filtered = useMemo(() => {
+    return issues
+      .map((issue, index) => ({ issue, index }))
+      .filter(({ issue }) => {
       const t = categorizeType(issue.type || "");
       if (typeFilter !== "all" && t !== typeFilter) return false;
 
@@ -54,8 +56,8 @@ export function IssuesPanel({ issues, onSelectIssue }: IssuesPanelProps) {
     setFeatureFilter("");
   };
 
-  const handleRowClick = (issue: GeometryIssue) => {
-    onSelectIssue(issue);
+  const handleRowClick = (index: number) => {
+    onSelectIssueIndex(index);
   };
 
   return (
@@ -110,16 +112,16 @@ export function IssuesPanel({ issues, onSelectIssue }: IssuesPanelProps) {
         </button>
       </div>
 
-      {!filteredIssues.length ? (
+      {!filtered.length ? (
         <p className="empty-state">No issues match the current filters.</p>
       ) : (
         <ul className="issues-panel-list" aria-label="Validation issues">
-          {filteredIssues.map((issue, index) => (
+          {filtered.map(({ issue, index }) => (
             <li key={index}>
               <button
                 type="button"
                 className="issues-panel-item"
-                onClick={() => handleRowClick(issue)}
+                onClick={() => handleRowClick(index)}
               >
                 <span className="issues-panel-item__type">{issue.type}</span>
                 <span className="issues-panel-item__severity">{issue.severity}</span>
