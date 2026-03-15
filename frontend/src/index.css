@@ -183,6 +183,26 @@ calcite-shell .app-main {
   font-weight: 600;
 }
 
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-validation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.dashboard-validation-status calcite-loader {
+  flex-shrink: 0;
+}
+
 .upload-label {
   display: block;
   margin-bottom: 0.75rem;
