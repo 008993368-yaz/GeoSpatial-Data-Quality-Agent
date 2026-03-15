@@ -11,6 +11,7 @@ export type GeometryIssue = {
 export type ValidationResult = {
   dataset_id: string;
   issues: GeometryIssue[];
+  corrections?: CorrectionSuggestion[] | null;
 };
 
 export type UploadResponse = {
@@ -19,4 +20,11 @@ export type UploadResponse = {
   /** Optional total feature count for the dataset (from upload metadata). */
   feature_count?: number;
   bounds?: number[] | null;
+};
+
+export type CorrectionSuggestion = {
+  method: string;
+  confidence: number;
+  explanation: string;
+  issue_index: number;
 };

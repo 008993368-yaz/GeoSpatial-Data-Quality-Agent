@@ -4,48 +4,12 @@ import { CalcitePanel } from "@esri/calcite-components-react";
 import { MapViewer } from "../Map/MapViewer";
 import { SummaryStats } from "./SummaryStats";
 import { IssuesPanel } from "./IssuesPanel";
+import { DetailView } from "./DetailView";
 import { useApp } from "../../context/AppContext";
-import type { GeometryIssue } from "../../types/api";
-
-type DetailViewProps = {
-  issue: GeometryIssue | null;
-};
-
-function DetailView({ issue }: DetailViewProps) {
-  if (!issue) {
-    return <p className="empty-state">Select an issue to see its details.</p>;
-  }
-
-  return (
-    <div className="detail-view">
-      <p>
-        <strong>Type:</strong> {issue.type}
-      </p>
-      <p>
-        <strong>Severity:</strong> {issue.severity}
-      </p>
-      {issue.feature_id !== undefined && issue.feature_id !== null && (
-        <p>
-          <strong>Feature:</strong> {String(issue.feature_id)}
-        </p>
-      )}
-      {issue.location && (
-        <p>
-          <strong>Location:</strong> [{issue.location.join(", ")}]
-        </p>
-      )}
-      {issue.description && (
-        <p>
-          <strong>Description:</strong> {issue.description}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export function DashboardPage() {
   const { currentDataset, validationIssues } = useApp();
-  const [selectedIssue, setSelectedIssue] = useState<GeometryIssue | null>(null);
+  const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
 
   const totalFeatures =
     typeof currentDataset?.feature_count === "number" ? currentDataset.feature_count : null;
@@ -72,7 +36,7 @@ export function DashboardPage() {
           </CalcitePanel>
 
           <CalcitePanel heading="Issues" className="dashboard-panel dashboard-panel--issues">
-            <IssuesPanel issues={validationIssues} onSelectIssue={setSelectedIssue} />
+            <IssuesPanel issues={validationIssues} onSelectIssueIndex={setSelectedIssueIndex} />
           </CalcitePanel>
 
           <CalcitePanel heading="Summary" className="dashboard-panel dashboard-panel--summary">
@@ -80,7 +44,7 @@ export function DashboardPage() {
           </CalcitePanel>
 
           <CalcitePanel heading="Issue details" className="dashboard-panel dashboard-panel--detail">
-            <DetailView issue={selectedIssue} />
+            <DetailView selectedIssueIndex={selectedIssueIndex} />
           </CalcitePanel>
         </div>
       )}
