@@ -28,3 +28,12 @@ export type CorrectionSuggestion = {
   explanation: string;
   issue_index: number;
 };
+
+/** Async validation job status (GET /validate/jobs/{job_id}). */
+export type ValidationJobStatus = {
+  job_id: string;
+  dataset_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  error?: string | null;
+  result?: ValidationResult | null;
+};

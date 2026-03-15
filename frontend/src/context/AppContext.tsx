@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { GeometryIssue, ValidationResult, UploadResponse } from "../types/api";
+import type {
+  GeometryIssue,
+  ValidationResult,
+  UploadResponse,
+  ValidationJobStatus,
+} from "../types/api";
+
+const POLL_INTERVAL_MS = 1500;
 
 type AppContextValue = {
   currentDataset: UploadResponse | null;
@@ -65,15 +72,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setValidationResult(null);
     setIsValidating(true);
     try {
-      const res = await fetch(`/api/v1/validate/${currentDataset.dataset_id}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      const startRes = await fetch("/api/v1/validate/async", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataset_id: currentDataset.dataset_id }),
+      });
+      if (!startRes.ok) {
+        const data = await startRes.json().catch(() => ({}));
         const detail =
-          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? res.statusText;
+          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? startRes.statusText;
         throw new Error(detail);
       }
-      const data = (await res.json()) as ValidationResult;
-      setValidationResult(data);
+      const { job_id } = (await startRes.json()) as ValidationJobStatus;
+
+      for (;;) {
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+        const jobRes = await fetch(`/api/v1/validate/jobs/${job_id}`);
+        if (!jobRes.ok) {
+          setValidationError("Failed to get validation status");
+          break;
+        }
+        const job = (await jobRes.json()) as ValidationJobStatus;
+        if (job.status === "completed" && job.result) {
+          setValidationResult(job.result);
+          break;
+        }
+        if (job.status === "failed") {
+          setValidationError(job.error ?? "Validation failed");
+          break;
+        }
+      }
     } catch (e) {
       setValidationError(e instanceof Error ? e.message : "Validation failed");
     } finally {
