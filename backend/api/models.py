@@ -1,5 +1,5 @@
 """Pydantic schemas for API request/response."""
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,11 +36,46 @@ class UploadResponse(BaseModel):
     bounds: Optional[List[float]] = Field(None, description="[minX, minY, maxX, maxY]")
 
 
+class CorrectionSuggestion(BaseModel):
+    """
+    A suggested fix for a validation issue (issue #86, #9).
+
+    Used by the Recommendation Agent and apply-corrections API. issue_index links
+    this suggestion to state["issues"][issue_index] (or the validation result issues list).
+    """
+
+    method: str = Field(..., description="Suggested fix e.g. buffer(0), rename field, snap to grid")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score 0–1")
+    explanation: str = Field(..., description="Natural-language explanation for the suggestion")
+    issue_index: int = Field(..., ge=0, description="Index into the issues list this suggestion applies to")
+
+
+class CorrectionAction(BaseModel):
+    """User decision for one correction (apply-corrections API request body)."""
+
+    issue_index: int = Field(..., ge=0, description="Index into the issues list")
+    action: Literal["approve", "reject"] = Field(..., description="Whether to apply or skip this correction")
+
+
+class ApplyCorrectionsRequest(BaseModel):
+    """Request body for POST /corrections/apply (issue #86)."""
+
+    dataset_id: str = Field(..., description="Dataset identifier")
+    corrections: List[CorrectionAction] = Field(
+        default_factory=list,
+        description="List of approve/reject decisions per issue index",
+    )
+
+
 class ValidationResult(BaseModel):
     """Result of geometry validation for a dataset."""
 
     dataset_id: str = Field(..., description="Dataset identifier that was validated")
     issues: List[GeometryIssue] = Field(default_factory=list, description="List of geometry issues found")
+    corrections: Optional[List[CorrectionSuggestion]] = Field(
+        None,
+        description="Suggested fixes from Recommendation Agent (one per issue or subset); indices match issues list",
+    )
 
 
 class ValidationJobStatus(BaseModel):

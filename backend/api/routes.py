@@ -140,7 +140,8 @@ async def validate_dataset(body: ValidateRequest):
     initial_state = empty_state(body.dataset_id, str(path))
     final_state = validation_graph.invoke(initial_state)
     issues = final_state.get("issues") or []
-    return ValidationResult(dataset_id=body.dataset_id, issues=issues)
+    corrections = final_state.get("corrections") or []
+    return ValidationResult(dataset_id=body.dataset_id, issues=issues, corrections=corrections if corrections else None)
 
 
 @router.get(
@@ -168,7 +169,8 @@ async def get_validation_results(dataset_id: str):
     initial_state = empty_state(dataset_id, str(path))
     final_state = validation_graph.invoke(initial_state)
     issues = final_state.get("issues") or []
-    return ValidationResult(dataset_id=dataset_id, issues=issues)
+    corrections = final_state.get("corrections") or []
+    return ValidationResult(dataset_id=dataset_id, issues=issues, corrections=corrections if corrections else None)
 
 
 @router.post(
@@ -214,7 +216,12 @@ async def validate_dataset_async(body: ValidateRequest, background_tasks: Backgr
             state = empty_state(dataset_id, dataset_path)
             final_state = validation_graph.invoke(state)
             issues = final_state.get("issues") or []
-            result = ValidationResult(dataset_id=dataset_id, issues=issues)
+            corrections = final_state.get("corrections") or []
+            result = ValidationResult(
+                dataset_id=dataset_id,
+                issues=issues,
+                corrections=corrections if corrections else None,
+            )
             job["result"] = result
             job["status"] = "completed"
         except Exception as exc:  # noqa: BLE001
