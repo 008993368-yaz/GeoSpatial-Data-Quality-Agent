@@ -67,6 +67,17 @@ class ApplyCorrectionsRequest(BaseModel):
     )
 
 
+class ApplyCorrectionsResponse(BaseModel):
+    """Response from POST /corrections/apply (README + issue #104)."""
+
+    applied: int = Field(..., ge=0, description="Number of corrections approved for application")
+    skipped: int = Field(..., ge=0, description="Number of corrections rejected (skipped)")
+    download_url: Optional[str] = Field(
+        None,
+        description="Optional URL to download cleaned export when implemented; may point at dataset GeoJSON meanwhile",
+    )
+
+
 class ValidationResult(BaseModel):
     """Result of geometry validation for a dataset."""
 

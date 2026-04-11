@@ -5,7 +5,9 @@ import type {
   UploadResponse,
   ValidationJobStatus,
   CorrectionDecision,
+  ApplyCorrectionsResponse,
 } from "../types/api";
+import { buildApplyCorrectionsActions } from "../utils/buildApplyCorrectionsRequest";
 
 const POLL_INTERVAL_MS = 1500;
 
@@ -29,6 +31,10 @@ type AppContextValue = {
   setCorrectionDecision: (issueIndex: number, decision: CorrectionDecision) => void;
   clearCorrectionDecision: (issueIndex: number) => void;
   resetCorrectionDecisions: () => void;
+  isApplyingCorrections: boolean;
+  applyCorrectionsError: string | null;
+  lastApplyCorrectionsResult: ApplyCorrectionsResponse | null;
+  handleApplyCorrections: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -43,6 +49,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isApplyingCorrections, setIsApplyingCorrections] = useState(false);
+  const [applyCorrectionsError, setApplyCorrectionsError] = useState<string | null>(null);
+  const [lastApplyCorrectionsResult, setLastApplyCorrectionsResult] =
+    useState<ApplyCorrectionsResponse | null>(null);
 
   async function handleUploadFile(file: File) {
     setError(null);
@@ -62,6 +72,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setValidationResult(null);
       setCorrectionDecisions({});
       setValidationError(null);
+      setApplyCorrectionsError(null);
+      setLastApplyCorrectionsResult(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");
     } finally {
@@ -81,6 +93,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setValidationError(null);
     setValidationResult(null);
     setCorrectionDecisions({});
+    setApplyCorrectionsError(null);
+    setLastApplyCorrectionsResult(null);
     setIsValidating(true);
     try {
       const startRes = await fetch("/api/v1/validate/async", {
@@ -125,6 +139,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setValidationResult(null);
     setCorrectionDecisions({});
     setValidationError(null);
+    setApplyCorrectionsError(null);
+    setLastApplyCorrectionsResult(null);
+  }
+
+  async function handleApplyCorrections() {
+    if (!currentDataset?.dataset_id || !validationResult) return;
+    const corrections = buildApplyCorrectionsActions(validationResult, correctionDecisions);
+    if (corrections.length === 0) return;
+
+    setApplyCorrectionsError(null);
+    setLastApplyCorrectionsResult(null);
+    setIsApplyingCorrections(true);
+    try {
+      const res = await fetch("/api/v1/corrections/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset_id: currentDataset.dataset_id,
+          corrections,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const detail =
+          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? res.statusText;
+        throw new Error(detail);
+      }
+      const data = (await res.json()) as ApplyCorrectionsResponse;
+      setLastApplyCorrectionsResult(data);
+    } catch (e) {
+      setApplyCorrectionsError(e instanceof Error ? e.message : "Apply corrections failed");
+    } finally {
+      setIsApplyingCorrections(false);
+    }
   }
 
   function setCorrectionDecision(issueIndex: number, decision: CorrectionDecision) {
@@ -162,6 +210,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCorrectionDecision,
         clearCorrectionDecision,
         resetCorrectionDecisions,
+        isApplyingCorrections,
+        applyCorrectionsError,
+        lastApplyCorrectionsResult,
+        handleApplyCorrections,
       }}
     >
       {children}

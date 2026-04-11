@@ -5,7 +5,16 @@ import uuid
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from api.models import ErrorCode, ErrorResponse, UploadResponse, ValidationJobStatus, ValidateRequest, ValidationResult
+from api.models import (
+    ApplyCorrectionsRequest,
+    ApplyCorrectionsResponse,
+    ErrorCode,
+    ErrorResponse,
+    UploadResponse,
+    ValidationJobStatus,
+    ValidateRequest,
+    ValidationResult,
+)
 from core.config import settings
 from services.file_handler import (
     extract_zip_in_upload_dir,
@@ -296,3 +305,52 @@ async def get_dataset_geojson(dataset_id: str):
             },
         )
     return FileResponse(path, media_type="application/geo+json")
+
+
+@router.post(
+    "/corrections/apply",
+    response_model=ApplyCorrectionsResponse,
+    responses={
+        200: {"description": "Corrections applied (stub counts); export URL when available"},
+        400: {"description": "Invalid request body", "model": ErrorResponse},
+        404: {"description": "Dataset not found", "model": ErrorResponse},
+    },
+)
+async def apply_corrections(body: ApplyCorrectionsRequest):
+    """
+    Accept user approve/reject decisions per issue index (issue #104).
+
+    Validates dataset exists. Returns applied vs skipped counts. Actual geometry
+    mutation and cleaned-zip export can be extended later; download_url may reference
+    the dataset GeoJSON as an interim download when no separate export exists.
+    """
+    if not body.corrections:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "detail": "At least one correction decision is required.",
+                "code": "EMPTY_CORRECTIONS",
+            },
+        )
+
+    path = get_primary_vector_path(body.dataset_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "detail": f"Dataset not found or no vector file: {body.dataset_id}",
+                "code": ErrorCode.DATASET_NOT_FOUND,
+            },
+        )
+
+    # Last entry wins if the same issue_index appears more than once.
+    by_index: dict[int, str] = {}
+    for item in body.corrections:
+        by_index[item.issue_index] = item.action
+
+    applied = sum(1 for a in by_index.values() if a == "approve")
+    skipped = sum(1 for a in by_index.values() if a == "reject")
+
+    download_url = f"/api/v1/datasets/{body.dataset_id}/geojson"
+
+    return ApplyCorrectionsResponse(applied=applied, skipped=skipped, download_url=download_url)
