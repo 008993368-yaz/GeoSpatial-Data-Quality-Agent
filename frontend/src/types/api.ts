@@ -32,6 +32,13 @@ export type CorrectionSuggestion = {
 /** User choice for a suggested correction (issue #103); persisted until apply or reset. */
 export type CorrectionDecision = "approve" | "reject" | "custom";
 
+/** POST /corrections/apply response (aligned with backend ApplyCorrectionsResponse). */
+export type ApplyCorrectionsResponse = {
+  applied: number;
+  skipped: number;
+  download_url?: string | null;
+};
+
 /** Async validation job status (GET /validate/jobs/{job_id}). */
 export type ValidationJobStatus = {
   job_id: string;
