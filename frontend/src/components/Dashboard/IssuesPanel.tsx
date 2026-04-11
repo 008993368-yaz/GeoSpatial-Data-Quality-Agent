@@ -6,7 +6,8 @@ import {
   CalciteInput,
 } from "@esri/calcite-components-react";
 
-import type { GeometryIssue } from "../../types/api";
+import type { CorrectionDecision, GeometryIssue } from "../../types/api";
+import { useApp } from "../../context/AppContext";
 
 export type IssuesPanelProps = {
   issues: GeometryIssue[];
@@ -22,7 +23,32 @@ function categorizeType(type: string): TypeFilter {
   return "geometry";
 }
 
+function correctionIndicesFromIssues(
+  issues: GeometryIssue[],
+  corrections: { issue_index: number }[] | null | undefined,
+): Set<number> {
+  const withSuggestion = new Set<number>();
+  if (!corrections?.length) return withSuggestion;
+  for (const c of corrections) {
+    if (
+      typeof c.issue_index === "number" &&
+      c.issue_index >= 0 &&
+      c.issue_index < issues.length
+    ) {
+      withSuggestion.add(c.issue_index);
+    }
+  }
+  return withSuggestion;
+}
+
+function decisionShortLabel(d: CorrectionDecision): string {
+  if (d === "approve") return "A";
+  if (d === "reject") return "R";
+  return "C";
+}
+
 export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
+  const { validationResult, correctionDecisions } = useApp();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const [featureFilter, setFeatureFilter] = useState<string>("");
@@ -135,6 +161,24 @@ export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
                     {issue.description.length > 80
                       ? `${issue.description.slice(0, 77)}…`
                       : issue.description}
+                  </span>
+                )}
+                {indicesWithCorrection.has(index) && (
+                  <span
+                    className="issues-panel-item__correction"
+                    title={
+                      correctionDecisions[index]
+                        ? `Correction: ${correctionDecisions[index]}`
+                        : "Suggested correction available — set choice in Issue details"
+                    }
+                  >
+                    {correctionDecisions[index] ? (
+                      <span className="issues-panel-item__decision-badge" aria-hidden>
+                        {decisionShortLabel(correctionDecisions[index])}
+                      </span>
+                    ) : (
+                      <span className="issues-panel-item__correction-pending">Fix</span>
+                    )}
                   </span>
                 )}
               </button>

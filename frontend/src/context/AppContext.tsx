@@ -4,6 +4,7 @@ import type {
   ValidationResult,
   UploadResponse,
   ValidationJobStatus,
+  CorrectionDecision,
 } from "../types/api";
 
 const POLL_INTERVAL_MS = 1500;
@@ -23,6 +24,11 @@ type AppContextValue = {
   handleUploadFile: (file: File) => Promise<void>;
   handleValidate: () => Promise<void>;
   clearValidation: () => void;
+  /** Per-issue-index choices for suggested corrections; cleared when validation result changes. */
+  correctionDecisions: Record<number, CorrectionDecision>;
+  setCorrectionDecision: (issueIndex: number, decision: CorrectionDecision) => void;
+  clearCorrectionDecision: (issueIndex: number) => void;
+  resetCorrectionDecisions: () => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -32,6 +38,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [correctionDecisions, setCorrectionDecisions] = useState<Record<number, CorrectionDecision>>(
+    {},
+  );
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -51,6 +60,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const data = (await res.json()) as UploadResponse;
       setCurrentDataset(data);
       setValidationResult(null);
+      setCorrectionDecisions({});
       setValidationError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");
@@ -70,6 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!currentDataset?.dataset_id) return;
     setValidationError(null);
     setValidationResult(null);
+    setCorrectionDecisions({});
     setIsValidating(true);
     try {
       const startRes = await fetch("/api/v1/validate/async", {
@@ -94,6 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const job = (await jobRes.json()) as ValidationJobStatus;
         if (job.status === "completed" && job.result) {
+          setCorrectionDecisions({});
           setValidationResult(job.result);
           break;
         }
@@ -111,7 +123,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function clearValidation() {
     setValidationResult(null);
+    setCorrectionDecisions({});
     setValidationError(null);
+  }
+
+  function setCorrectionDecision(issueIndex: number, decision: CorrectionDecision) {
+    setCorrectionDecisions((prev) => ({ ...prev, [issueIndex]: decision }));
+  }
+
+  function clearCorrectionDecision(issueIndex: number) {
+    setCorrectionDecisions((prev) => {
+      const next = { ...prev };
+      delete next[issueIndex];
+      return next;
+    });
+  }
+
+  function resetCorrectionDecisions() {
+    setCorrectionDecisions({});
   }
 
   return (
@@ -129,6 +158,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         handleUploadFile,
         handleValidate,
         clearValidation,
+        correctionDecisions,
+        setCorrectionDecision,
+        clearCorrectionDecision,
+        resetCorrectionDecisions,
       }}
     >
       {children}

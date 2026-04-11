@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { CalciteButton } from "@esri/calcite-components-react";
 
 import { useApp } from "../../context/AppContext";
 import type { CorrectionSuggestion, GeometryIssue } from "../../types/api";
@@ -8,7 +9,13 @@ export type DetailViewProps = {
 };
 
 export function DetailView({ selectedIssueIndex }: DetailViewProps) {
-  const { validationResult } = useApp();
+  const {
+    validationResult,
+    correctionDecisions,
+    setCorrectionDecision,
+    clearCorrectionDecision,
+    resetCorrectionDecisions,
+  } = useApp();
 
   const issue: GeometryIssue | null =
     selectedIssueIndex !== null && validationResult?.issues?.[selectedIssueIndex]
@@ -24,9 +31,14 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
     );
   }, [selectedIssueIndex, validationResult?.corrections]);
 
-  if (!issue) {
+  const hasAnyDecisions = Object.keys(correctionDecisions).length > 0;
+
+  if (!issue || selectedIssueIndex === null) {
     return <p className="empty-state">Select an issue to see its details and suggested fix.</p>;
   }
+
+  const issueIndex = selectedIssueIndex;
+  const decision = correctionDecisions[issueIndex];
 
   return (
     <div className="detail-view">
@@ -72,10 +84,60 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
             <p>
               <strong>Explanation:</strong> {suggestion.explanation}
             </p>
+
+            <div className="correction-actions" role="group" aria-labelledby="correction-actions-label">
+              <p id="correction-actions-label" className="correction-actions__label">
+                How should we handle this suggestion?
+              </p>
+              <div className="correction-actions__buttons">
+                <CalciteButton
+                  kind={decision === "approve" ? "brand" : "neutral"}
+                  appearance={decision === "approve" ? "solid" : "outline"}
+                  onClick={() => setCorrectionDecision(issueIndex, "approve")}
+                  label="Approve suggested fix"
+                >
+                  Approve
+                </CalciteButton>
+                <CalciteButton
+                  kind={decision === "reject" ? "brand" : "neutral"}
+                  appearance={decision === "reject" ? "solid" : "outline"}
+                  onClick={() => setCorrectionDecision(issueIndex, "reject")}
+                  label="Reject suggested fix"
+                >
+                  Reject
+                </CalciteButton>
+                <CalciteButton
+                  kind={decision === "custom" ? "brand" : "neutral"}
+                  appearance={decision === "custom" ? "solid" : "outline"}
+                  onClick={() => setCorrectionDecision(issueIndex, "custom")}
+                  label="Use a custom fix you will edit before apply"
+                >
+                  Custom
+                </CalciteButton>
+              </div>
+              <p className="correction-actions__hint correction-actions__hint--custom">
+                <strong>Custom:</strong> you will supply or adjust the fix before applying corrections
+                (manual editing UI can follow in a later task).
+              </p>
+              <div className="correction-actions__footer">
+                <button
+                  type="button"
+                  className="correction-actions__link"
+                  onClick={() => clearCorrectionDecision(issueIndex)}
+                  disabled={decision === undefined}
+                >
+                  Clear choice for this issue
+                </button>
+                {hasAnyDecisions && (
+                  <button type="button" className="correction-actions__link" onClick={resetCorrectionDecisions}>
+                    Reset all correction choices
+                  </button>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>
     </div>
   );
 }
-
