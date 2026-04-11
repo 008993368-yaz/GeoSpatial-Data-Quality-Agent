@@ -29,6 +29,9 @@ export type CorrectionSuggestion = {
   issue_index: number;
 };
 
+/** User choice for a suggested correction (issue #103); persisted until apply or reset. */
+export type CorrectionDecision = "approve" | "reject" | "custom";
+
 /** Async validation job status (GET /validate/jobs/{job_id}). */
 export type ValidationJobStatus = {
   job_id: string;
