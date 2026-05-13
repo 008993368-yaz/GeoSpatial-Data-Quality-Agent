@@ -203,6 +203,68 @@ calcite-shell .app-main {
   flex-shrink: 0;
 }
 
+.apply-results-panel {
+  margin-bottom: 1rem;
+}
+
+.apply-results__intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.apply-results__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.apply-results__stat {
+  min-width: 5rem;
+}
+
+.apply-results__stat-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #6a6a6a;
+}
+
+.apply-results__stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.apply-results__summary {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.apply-results__note {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.apply-results__download {
+  margin-bottom: 1rem;
+}
+
+.apply-results__download-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #6a6a6a;
+}
+
+.apply-results__footer {
+  margin-top: 0.5rem;
+}
+
 .upload-label {
   display: block;
   margin-bottom: 0.75rem;

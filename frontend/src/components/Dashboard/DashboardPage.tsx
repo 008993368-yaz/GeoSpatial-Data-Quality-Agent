@@ -5,6 +5,7 @@ import { MapViewer } from "../Map/MapViewer";
 import { SummaryStats } from "./SummaryStats";
 import { IssuesPanel } from "./IssuesPanel";
 import { DetailView } from "./DetailView";
+import { ApplyResultsPanel } from "./ApplyResultsPanel";
 import { useApp } from "../../context/AppContext";
 import { buildApplyCorrectionsActions } from "../../utils/buildApplyCorrectionsRequest";
 
@@ -21,6 +22,7 @@ export function DashboardPage() {
     applyCorrectionsError,
     lastApplyCorrectionsResult,
     handleApplyCorrections,
+    dismissLastApplyResult,
   } = useApp();
   const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
 
@@ -92,18 +94,10 @@ export function DashboardPage() {
                 {applyCorrectionsError}
               </p>
             )}
-            {lastApplyCorrectionsResult && (
-              <p className="status-message status-message--success" role="status">
-                Applied {lastApplyCorrectionsResult.applied}, skipped {lastApplyCorrectionsResult.skipped}.
-                {lastApplyCorrectionsResult.download_url ? (
-                  <>
-                    {" "}
-                    <a href={lastApplyCorrectionsResult.download_url}>Dataset download</a>
-                  </>
-                ) : null}
-              </p>
-            )}
           </div>
+          {lastApplyCorrectionsResult ? (
+            <ApplyResultsPanel result={lastApplyCorrectionsResult} onDismiss={dismissLastApplyResult} />
+          ) : null}
           <div className="dashboard-grid">
             <CalcitePanel heading={currentDataset.filename} className="dashboard-panel dashboard-panel--map">
               <MapViewer

@@ -352,5 +352,14 @@ async def apply_corrections(body: ApplyCorrectionsRequest):
     skipped = sum(1 for a in by_index.values() if a == "reject")
 
     download_url = f"/api/v1/datasets/{body.dataset_id}/geojson"
+    export_note = (
+        "This link downloads the dataset’s current GeoJSON as stored on the server. "
+        "A dedicated cleaned-export file (e.g. ZIP) may replace it when the export pipeline is implemented."
+    )
 
-    return ApplyCorrectionsResponse(applied=applied, skipped=skipped, download_url=download_url)
+    return ApplyCorrectionsResponse(
+        applied=applied,
+        skipped=skipped,
+        download_url=download_url,
+        export_note=export_note,
+    )

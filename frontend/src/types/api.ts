@@ -37,6 +37,8 @@ export type ApplyCorrectionsResponse = {
   applied: number;
   skipped: number;
   download_url?: string | null;
+  /** Server hint about what the download is (issue #105). */
+  export_note?: string | null;
 };
 
 /** Async validation job status (GET /validate/jobs/{job_id}). */
