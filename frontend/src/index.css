@@ -191,6 +191,20 @@ calcite-shell .app-main {
   margin-bottom: 1rem;
 }
 
+.dashboard-feedback-alert {
+  flex: 1 1 100%;
+  min-width: min(100%, 22rem);
+}
+
+.dashboard-confirm-dialog__body {
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.apply-results__success-notice {
+  margin-bottom: 0.75rem;
+}
+
 .dashboard-validation-status {
   display: inline-flex;
   align-items: center;

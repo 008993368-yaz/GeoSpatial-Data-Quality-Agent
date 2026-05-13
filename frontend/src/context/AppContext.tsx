@@ -8,6 +8,7 @@ import type {
   ApplyCorrectionsResponse,
 } from "../types/api";
 import { buildApplyCorrectionsActions } from "../utils/buildApplyCorrectionsRequest";
+import { formatApiErrorBody } from "../utils/formatApiErrorBody";
 
 const POLL_INTERVAL_MS = 1500;
 
@@ -36,6 +37,8 @@ type AppContextValue = {
   lastApplyCorrectionsResult: ApplyCorrectionsResponse | null;
   handleApplyCorrections: () => Promise<void>;
   dismissLastApplyResult: () => void;
+  clearValidationError: () => void;
+  clearApplyCorrectionsError: () => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -64,9 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/v1/upload", { method: "POST", body: form });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const detail =
-          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? res.statusText;
-        throw new Error(detail);
+        throw new Error(formatApiErrorBody(data, res.statusText));
       }
       const data = (await res.json()) as UploadResponse;
       setCurrentDataset(data);
@@ -105,9 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
       if (!startRes.ok) {
         const data = await startRes.json().catch(() => ({}));
-        const detail =
-          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? startRes.statusText;
-        throw new Error(detail);
+        throw new Error(formatApiErrorBody(data, startRes.statusText));
       }
       const { job_id } = (await startRes.json()) as ValidationJobStatus;
 
@@ -115,7 +114,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
         const jobRes = await fetch(`/api/v1/validate/jobs/${job_id}`);
         if (!jobRes.ok) {
-          setValidationError("Failed to get validation status");
+          const errData = await jobRes.json().catch(() => ({}));
+          setValidationError(formatApiErrorBody(errData, "Failed to get validation status"));
           break;
         }
         const job = (await jobRes.json()) as ValidationJobStatus;
@@ -163,9 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const detail =
-          typeof data.detail === "string" ? data.detail : data.detail?.detail ?? res.statusText;
-        throw new Error(detail);
+        throw new Error(formatApiErrorBody(data, res.statusText));
       }
       const data = (await res.json()) as ApplyCorrectionsResponse;
       setLastApplyCorrectionsResult(data);
@@ -196,6 +194,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLastApplyCorrectionsResult(null);
   }
 
+  function clearValidationError() {
+    setValidationError(null);
+  }
+
+  function clearApplyCorrectionsError() {
+    setApplyCorrectionsError(null);
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -220,6 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         lastApplyCorrectionsResult,
         handleApplyCorrections,
         dismissLastApplyResult,
+        clearValidationError,
+        clearApplyCorrectionsError,
       }}
     >
       {children}

@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import { CalcitePanel, CalciteButton, CalciteLoader } from "@esri/calcite-components-react";
+import {
+  CalcitePanel,
+  CalciteButton,
+  CalciteLoader,
+  CalciteAlert,
+  CalciteDialog,
+} from "@esri/calcite-components-react";
 
 import { MapViewer } from "../Map/MapViewer";
 import { SummaryStats } from "./SummaryStats";
@@ -16,15 +22,13 @@ export function DashboardPage() {
     validationResult,
     correctionDecisions,
     isValidating,
-    validationError,
-    handleValidate,
-    isApplyingCorrections,
-    applyCorrectionsError,
-    lastApplyCorrectionsResult,
     handleApplyCorrections,
     dismissLastApplyResult,
+    clearValidationError,
+    clearApplyCorrectionsError,
   } = useApp();
   const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
+  const [validateConfirmOpen, setValidateConfirmOpen] = useState(false);
 
   const totalFeatures =
     typeof currentDataset?.feature_count === "number" ? currentDataset.feature_count : null;
@@ -36,6 +40,22 @@ export function DashboardPage() {
 
   const canApplyCorrections =
     Boolean(currentDataset?.dataset_id && validationResult && applyActionsCount > 0);
+
+  const validateWillClearFeedback =
+    Object.keys(correctionDecisions).length > 0 || lastApplyCorrectionsResult !== null;
+
+  function requestRunValidation() {
+    if (validateWillClearFeedback) {
+      setValidateConfirmOpen(true);
+      return;
+    }
+    void handleValidate();
+  }
+
+  function confirmRunValidation() {
+    setValidateConfirmOpen(false);
+    void handleValidate();
+  }
 
   return (
     <section className="page-section page-section--dashboard" aria-labelledby="dashboard-heading">
@@ -49,10 +69,31 @@ export function DashboardPage() {
         </p>
       ) : (
         <>
+          <CalciteDialog
+            open={validateConfirmOpen}
+            heading="Re-run validation?"
+            onCalciteDialogClose={() => setValidateConfirmOpen(false)}
+          >
+            <p className="dashboard-confirm-dialog__body">
+              Starting validation again will clear your correction choices for this result and remove the apply
+              results summary until you apply again. Continue?
+            </p>
+            <CalciteButton
+              slot="footer-start"
+              appearance="outline"
+              kind="neutral"
+              onClick={() => setValidateConfirmOpen(false)}
+            >
+              Cancel
+            </CalciteButton>
+            <CalciteButton slot="footer-end" kind="brand" onClick={confirmRunValidation}>
+              Continue
+            </CalciteButton>
+          </CalciteDialog>
           <div className="dashboard-actions">
             <CalciteButton
               kind="brand"
-              onClick={handleValidate}
+              onClick={requestRunValidation}
               disabled={isValidating || isApplyingCorrections}
               loading={isValidating}
               label={isValidating ? "Validating…" : "Run validation"}
@@ -85,14 +126,30 @@ export function DashboardPage() {
               </div>
             )}
             {validationError && (
-              <p className="status-message status-message--error" role="alert">
-                {validationError}
-              </p>
+              <CalciteAlert
+                kind="danger"
+                open
+                closable
+                label="Validation error"
+                onCalciteAlertClose={() => clearValidationError()}
+                className="dashboard-feedback-alert"
+              >
+                <div slot="title">Validation error</div>
+                <div slot="message">{validationError}</div>
+              </CalciteAlert>
             )}
             {applyCorrectionsError && (
-              <p className="status-message status-message--error" role="alert">
-                {applyCorrectionsError}
-              </p>
+              <CalciteAlert
+                kind="danger"
+                open
+                closable
+                label="Apply corrections error"
+                onCalciteAlertClose={() => clearApplyCorrectionsError()}
+                className="dashboard-feedback-alert"
+              >
+                <div slot="title">Could not apply corrections</div>
+                <div slot="message">{applyCorrectionsError}</div>
+              </CalciteAlert>
             )}
           </div>
           {lastApplyCorrectionsResult ? (

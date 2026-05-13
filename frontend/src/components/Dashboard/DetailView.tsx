@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { CalciteButton } from "@esri/calcite-components-react";
+import { useMemo, useState } from "react";
+import { CalciteButton, CalciteDialog } from "@esri/calcite-components-react";
 
 import { useApp } from "../../context/AppContext";
 import type { CorrectionSuggestion, GeometryIssue } from "../../types/api";
@@ -9,12 +9,14 @@ export type DetailViewProps = {
 };
 
 export function DetailView({ selectedIssueIndex }: DetailViewProps) {
+  const [resetAllConfirmOpen, setResetAllConfirmOpen] = useState(false);
   const {
     validationResult,
     correctionDecisions,
     setCorrectionDecision,
     clearCorrectionDecision,
     resetCorrectionDecisions,
+    isApplyingCorrections,
   } = useApp();
 
   const issue: GeometryIssue | null =
@@ -42,6 +44,34 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
 
   return (
     <div className="detail-view">
+      <CalciteDialog
+        open={resetAllConfirmOpen}
+        heading="Reset all correction choices?"
+        onCalciteDialogClose={() => setResetAllConfirmOpen(false)}
+      >
+        <p className="dashboard-confirm-dialog__body">
+          This removes Approve, Reject, and Custom selections for every issue. You will need to choose again before
+          applying corrections.
+        </p>
+        <CalciteButton
+          slot="footer-start"
+          appearance="outline"
+          kind="neutral"
+          onClick={() => setResetAllConfirmOpen(false)}
+        >
+          Cancel
+        </CalciteButton>
+        <CalciteButton
+          slot="footer-end"
+          kind="brand"
+          onClick={() => {
+            setResetAllConfirmOpen(false);
+            resetCorrectionDecisions();
+          }}
+        >
+          Reset all
+        </CalciteButton>
+      </CalciteDialog>
       <div className="detail-view__section">
         <h3 className="detail-view__heading">Issue details</h3>
         <p>
@@ -94,6 +124,7 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                   kind={decision === "approve" ? "brand" : "neutral"}
                   appearance={decision === "approve" ? "solid" : "outline"}
                   onClick={() => setCorrectionDecision(issueIndex, "approve")}
+                  disabled={isApplyingCorrections}
                   label="Approve suggested fix"
                 >
                   Approve
@@ -102,6 +133,7 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                   kind={decision === "reject" ? "brand" : "neutral"}
                   appearance={decision === "reject" ? "solid" : "outline"}
                   onClick={() => setCorrectionDecision(issueIndex, "reject")}
+                  disabled={isApplyingCorrections}
                   label="Reject suggested fix"
                 >
                   Reject
@@ -110,6 +142,7 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                   kind={decision === "custom" ? "brand" : "neutral"}
                   appearance={decision === "custom" ? "solid" : "outline"}
                   onClick={() => setCorrectionDecision(issueIndex, "custom")}
+                  disabled={isApplyingCorrections}
                   label="Use a custom fix you will edit before apply"
                 >
                   Custom
@@ -124,12 +157,17 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                   type="button"
                   className="correction-actions__link"
                   onClick={() => clearCorrectionDecision(issueIndex)}
-                  disabled={decision === undefined}
+                  disabled={decision === undefined || isApplyingCorrections}
                 >
                   Clear choice for this issue
                 </button>
                 {hasAnyDecisions && (
-                  <button type="button" className="correction-actions__link" onClick={resetCorrectionDecisions}>
+                  <button
+                    type="button"
+                    className="correction-actions__link"
+                    onClick={() => setResetAllConfirmOpen(true)}
+                    disabled={isApplyingCorrections}
+                  >
                     Reset all correction choices
                   </button>
                 )}
