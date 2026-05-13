@@ -14,6 +14,12 @@ export function ApplyResultsPanel({ result, onDismiss }: ApplyResultsPanelProps)
 
   return (
     <CalcitePanel className="apply-results-panel" heading="Correction apply results">
+      <CalciteNotice open kind="success" icon scale="s" width="full" className="apply-results__success-notice">
+        <div slot="title">Apply completed</div>
+        <div slot="message">
+          Your approve/reject choices were submitted successfully. Review the counts and download below if needed.
+        </div>
+      </CalciteNotice>
       <p className="apply-results__intro">
         Counts from the last successful request to apply your choices.
       </p>
