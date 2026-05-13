@@ -35,6 +35,7 @@ type AppContextValue = {
   applyCorrectionsError: string | null;
   lastApplyCorrectionsResult: ApplyCorrectionsResponse | null;
   handleApplyCorrections: () => Promise<void>;
+  dismissLastApplyResult: () => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -191,6 +192,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCorrectionDecisions({});
   }
 
+  function dismissLastApplyResult() {
+    setLastApplyCorrectionsResult(null);
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -214,6 +219,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         applyCorrectionsError,
         lastApplyCorrectionsResult,
         handleApplyCorrections,
+        dismissLastApplyResult,
       }}
     >
       {children}

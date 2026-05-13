@@ -60,6 +60,7 @@ def test_apply_corrections_success(client, tmp_path, monkeypatch):
     assert data["applied"] == 1
     assert data["skipped"] == 1
     assert dataset_id in (data.get("download_url") or "")
+    assert data.get("export_note")
 
 
 def test_apply_corrections_duplicate_issue_index_last_wins(client, tmp_path, monkeypatch):
