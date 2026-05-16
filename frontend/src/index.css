@@ -444,6 +444,17 @@ calcite-shell .app-main {
   font-weight: 600;
 }
 
+.correction-callout {
+  margin-bottom: 0.75rem;
+}
+
+.correction-actions--onboarding .correction-actions__buttons {
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 121, 193, 0.25);
+  background: rgba(0, 121, 193, 0.04);
+}
+
 .correction-actions__buttons {
   display: flex;
   flex-wrap: wrap;
@@ -511,6 +522,36 @@ calcite-shell .app-main {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.issues-panel__hint {
+  margin: 0 0 0.5rem;
+}
+
+.issues-panel__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #f8f9fa;
+}
+
+.issues-panel__clear {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  color: #0079c1;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.issues-panel__clear:hover {
+  color: #005a8f;
 }
 
 .issues-panel-item {
