@@ -48,7 +48,12 @@ function decisionShortLabel(d: CorrectionDecision): string {
 }
 
 export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
-  const { validationResult, correctionDecisions } = useApp();
+  const { validationResult, correctionDecisions, correctionOverrides } = useApp();
+
+  const indicesWithCorrection = useMemo(
+    () => correctionIndicesFromIssues(issues, validationResult?.corrections),
+    [issues, validationResult?.corrections],
+  );
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
   const [featureFilter, setFeatureFilter] = useState<string>("");
@@ -168,13 +173,21 @@ export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
                     className="issues-panel-item__correction"
                     title={
                       correctionDecisions[index]
-                        ? `Correction: ${correctionDecisions[index]}`
+                        ? `Correction: ${correctionDecisions[index]}${
+                            correctionDecisions[index] === "custom" &&
+                            correctionOverrides[index]
+                              ? " (edited)"
+                              : ""
+                          }`
                         : "Suggested correction available — set choice in Issue details"
                     }
                   >
                     {correctionDecisions[index] ? (
                       <span className="issues-panel-item__decision-badge" aria-hidden>
                         {decisionShortLabel(correctionDecisions[index])}
+                        {correctionDecisions[index] === "custom" &&
+                          correctionOverrides[index] &&
+                          "*"}
                       </span>
                     ) : (
                       <span className="issues-panel-item__correction-pending">Fix</span>

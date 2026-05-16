@@ -32,6 +32,13 @@ export type CorrectionSuggestion = {
 /** User choice for a suggested correction (issue #103); persisted until apply or reset. */
 export type CorrectionDecision = "approve" | "reject" | "custom";
 
+/** Manual override for a custom correction (issue #106); sent on apply when action is approve. */
+export type CorrectionOverride = {
+  feature_id?: unknown;
+  geometry_wkt?: string;
+  attributes?: Record<string, unknown>;
+};
+
 /** POST /corrections/apply response (aligned with backend ApplyCorrectionsResponse). */
 export type ApplyCorrectionsResponse = {
   applied: number;

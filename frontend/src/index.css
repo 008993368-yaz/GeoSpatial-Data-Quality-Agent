@@ -462,6 +462,40 @@ calcite-shell .app-main {
   text-decoration: none;
 }
 
+/* Custom correction editor (issue #106) */
+.custom-correction-editor {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.custom-correction-editor__intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.custom-correction-editor__error {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #c0392b;
+}
+
+.custom-correction-editor__saved {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #2e7d32;
+}
+
+.custom-correction-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .issues-panel-item {
   display: flex;
   flex-wrap: wrap;

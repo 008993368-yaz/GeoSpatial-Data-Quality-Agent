@@ -1,5 +1,5 @@
 """Pydantic schemas for API request/response."""
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -55,6 +55,18 @@ class CorrectionAction(BaseModel):
 
     issue_index: int = Field(..., ge=0, description="Index into the issues list")
     action: Literal["approve", "reject"] = Field(..., description="Whether to apply or skip this correction")
+    feature_id: Optional[Any] = Field(
+        None,
+        description="Feature to update when geometry_wkt or attributes overrides are supplied (issue #106)",
+    )
+    geometry_wkt: Optional[str] = Field(
+        None,
+        description="Optional Well-Known Text geometry to apply for this feature when action is approve",
+    )
+    attributes: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional attribute key/value overrides for this feature when action is approve",
+    )
 
 
 class ApplyCorrectionsRequest(BaseModel):

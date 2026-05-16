@@ -3,6 +3,7 @@ import { CalciteButton, CalciteDialog } from "@esri/calcite-components-react";
 
 import { useApp } from "../../context/AppContext";
 import type { CorrectionSuggestion, GeometryIssue } from "../../types/api";
+import { CustomCorrectionEditor } from "./CustomCorrectionEditor";
 
 export type DetailViewProps = {
   selectedIssueIndex: number | null;
@@ -12,8 +13,12 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
   const [resetAllConfirmOpen, setResetAllConfirmOpen] = useState(false);
   const {
     validationResult,
+    currentDataset,
     correctionDecisions,
+    correctionOverrides,
     setCorrectionDecision,
+    setCorrectionOverride,
+    clearCorrectionOverride,
     clearCorrectionDecision,
     resetCorrectionDecisions,
     isApplyingCorrections,
@@ -148,10 +153,22 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                   Custom
                 </CalciteButton>
               </div>
-              <p className="correction-actions__hint correction-actions__hint--custom">
-                <strong>Custom:</strong> you will supply or adjust the fix before applying corrections
-                (manual editing UI can follow in a later task).
-              </p>
+              {decision === "custom" && currentDataset?.dataset_id && (
+                <CustomCorrectionEditor
+                  datasetId={currentDataset.dataset_id}
+                  issue={issue}
+                  savedOverride={correctionOverrides[issueIndex]}
+                  onSave={(override) => setCorrectionOverride(issueIndex, override)}
+                  onClear={() => clearCorrectionOverride(issueIndex)}
+                  disabled={isApplyingCorrections}
+                />
+              )}
+              {decision === "custom" && !correctionOverrides[issueIndex] && (
+                <p className="correction-actions__hint correction-actions__hint--custom">
+                  <strong>Custom:</strong> save your geometry WKT and/or attribute JSON before applying
+                  corrections.
+                </p>
+              )}
               <div className="correction-actions__footer">
                 <button
                   type="button"

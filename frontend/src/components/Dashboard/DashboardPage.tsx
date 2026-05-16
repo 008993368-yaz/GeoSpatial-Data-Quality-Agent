@@ -13,7 +13,10 @@ import { IssuesPanel } from "./IssuesPanel";
 import { DetailView } from "./DetailView";
 import { ApplyResultsPanel } from "./ApplyResultsPanel";
 import { useApp } from "../../context/AppContext";
-import { buildApplyCorrectionsActions } from "../../utils/buildApplyCorrectionsRequest";
+import {
+  buildApplyCorrectionsActions,
+  hasPendingCustomCorrections,
+} from "../../utils/buildApplyCorrectionsRequest";
 
 export function DashboardPage() {
   const {
@@ -21,6 +24,7 @@ export function DashboardPage() {
     validationIssues,
     validationResult,
     correctionDecisions,
+    correctionOverrides,
     isValidating,
     validationError,
     handleValidate,
@@ -40,11 +44,22 @@ export function DashboardPage() {
 
   const applyActionsCount = useMemo(() => {
     if (!validationResult) return 0;
-    return buildApplyCorrectionsActions(validationResult, correctionDecisions).length;
-  }, [validationResult, correctionDecisions]);
+    return buildApplyCorrectionsActions(
+      validationResult,
+      correctionDecisions,
+      correctionOverrides,
+    ).length;
+  }, [validationResult, correctionDecisions, correctionOverrides]);
+
+  const pendingCustomEdits = useMemo(
+    () => hasPendingCustomCorrections(correctionDecisions, correctionOverrides),
+    [correctionDecisions, correctionOverrides],
+  );
 
   const canApplyCorrections =
-    Boolean(currentDataset?.dataset_id && validationResult && applyActionsCount > 0);
+    Boolean(
+      currentDataset?.dataset_id && validationResult && applyActionsCount > 0 && !pendingCustomEdits,
+    );
 
   const validateWillClearFeedback =
     Object.keys(correctionDecisions).length > 0 || lastApplyCorrectionsResult !== null;
@@ -124,10 +139,15 @@ export function DashboardPage() {
                 <span>Validation in progress. Issues and map will update when complete.</span>
               </div>
             )}
+            {pendingCustomEdits && (
+              <p className="dashboard-validation-status" role="status">
+                Save custom fixes for all Custom issues before applying corrections.
+              </p>
+            )}
             {isApplyingCorrections && (
               <div className="dashboard-validation-status" role="status" aria-live="polite">
                 <CalciteLoader scale="s" />
-                <span>Sending your approve/reject choices to the API…</span>
+                <span>Sending your correction choices to the API…</span>
               </div>
             )}
             {validationError && (

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from api.models import (
     ApplyCorrectionsRequest,
     ApplyCorrectionsResponse,
+    CorrectionAction,
     ErrorCode,
     ErrorResponse,
     UploadResponse,
@@ -23,6 +24,7 @@ from services.file_handler import (
     get_upload_path,
     save_upload,
 )
+from services.correction_applier import apply_correction_overrides
 from services.geojson_parser import parse_geojson_metadata
 from services.shapefile_parser import parse_shapefile_metadata
 from agents.orchestrator import empty_state, validation_graph
@@ -344,18 +346,34 @@ async def apply_corrections(body: ApplyCorrectionsRequest):
         )
 
     # Last entry wins if the same issue_index appears more than once.
-    by_index: dict[int, str] = {}
+    by_index: dict[int, CorrectionAction] = {}
     for item in body.corrections:
-        by_index[item.issue_index] = item.action
+        by_index[item.issue_index] = item
 
-    applied = sum(1 for a in by_index.values() if a == "approve")
-    skipped = sum(1 for a in by_index.values() if a == "reject")
+    applied = sum(1 for a in by_index.values() if a.action == "approve")
+    skipped = sum(1 for a in by_index.values() if a.action == "reject")
+
+    correction_payloads = [item.model_dump() for item in by_index.values()]
+    try:
+        mutated = apply_correction_overrides(path, correction_payloads)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"detail": str(exc), "code": "INVALID_OVERRIDE"},
+        ) from exc
 
     download_url = f"/api/v1/datasets/{body.dataset_id}/geojson"
-    export_note = (
-        "This link downloads the dataset’s current GeoJSON as stored on the server. "
-        "A dedicated cleaned-export file (e.g. ZIP) may replace it when the export pipeline is implemented."
-    )
+    if mutated:
+        export_note = (
+            f"Applied manual overrides to {mutated} feature(s) in the dataset GeoJSON. "
+            "Download reflects those edits; map editing in the UI is not supported (WKT/attributes only)."
+        )
+    else:
+        export_note = (
+            "This link downloads the dataset’s current GeoJSON as stored on the server. "
+            "Approve decisions without custom overrides do not change geometry yet. "
+            "A dedicated cleaned-export file (e.g. ZIP) may replace this when the export pipeline is extended."
+        )
 
     return ApplyCorrectionsResponse(
         applied=applied,
