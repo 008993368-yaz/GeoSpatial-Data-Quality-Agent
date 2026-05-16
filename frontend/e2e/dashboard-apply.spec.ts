@@ -125,3 +125,34 @@ test.describe("Apply corrections disabled hints (issue #116)", () => {
     await expect(applyCorrectionsButton(page)).toBeDisabled();
   });
 });
+
+async function runValidationOnDashboard(page: Page) {
+  await page.goto("/#/dashboard");
+  await page.getByRole("button", { name: /^Run validation$/i }).click();
+  await expect(page.getByText(/Validation in progress/i)).toBeHidden({ timeout: 30_000 });
+  await expect(page.getByRole("button", { name: /Open quality report/i })).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+test.describe("First correction callout (issue #118)", () => {
+  test("shows Approve/Reject callout on first issue with a suggestion", async ({ page }) => {
+    mockValidationSuccess(page);
+    await uploadDataset(page);
+    await runValidationOnDashboard(page);
+
+    await page.locator(".issues-panel-item").first().click();
+    await expect(page.getByText(/Choose Approve or Reject to record your decision/i)).toBeVisible();
+  });
+
+  test("hides callout after Approve is chosen", async ({ page }) => {
+    mockValidationSuccess(page);
+    await uploadDataset(page);
+    await runValidationOnDashboard(page);
+
+    await page.locator(".issues-panel-item").first().click();
+    await expect(page.getByText(/Choose Approve or Reject to record your decision/i)).toBeVisible();
+    await page.getByRole("button", { name: /Approve suggested fix/i }).click();
+    await expect(page.getByText(/Choose Approve or Reject to record your decision/i)).toBeHidden();
+  });
+});
