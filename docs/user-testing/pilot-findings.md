@@ -77,14 +77,14 @@ P03's uniform neutral ratings illustrate a cautious or rushed post-test question
 
 ## Prioritized follow-ups
 
-| Priority | Suggested GitHub issue title | Description | Label |
-|----------|------------------------------|-------------|-------|
-| P0 | Dashboard: explain why Apply corrections is disabled | Show inline message listing pending custom saves or zero decisions | `ux` |
-| P0 | Issues panel: improve filter discoverability | Add helper text or default critical filter when critical issues exist | `ux` |
-| P1 | Empty dashboard: onboarding hint after first visit | Link to Upload page when no dataset loaded | `enhancement` |
-| P1 | Detail view: highlight Approve/Reject for first suggestion | Subtle callout on first issue with correction | `ux` |
-| P2 | Report page: short export format guide | One sentence under export buttons (JSON vs Markdown vs print) | `documentation` |
-| P2 | Map tab: cross-link to Dashboard after validation | Reduce duplicate "where do I review issues?" confusion | `enhancement` |
+| Priority | Issue | Description |
+|----------|-------|-------------|
+| P0 | [#116](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/116) | Explain why Apply corrections is disabled |
+| P0 | [#117](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/117) | Improve issue filter discoverability |
+| P1 | [#115](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/115) | Empty dashboard onboarding hint |
+| P1 | [#118](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/118) | Highlight Approve/Reject for first suggestion |
+| P2 | [#119](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/119) | Report export format guide |
+| P2 | [#120](https://github.com/008993368-yaz/GeoSpatial-Data-Quality-Agent/issues/120) | Map tab cross-link to Dashboard |
 
 ## Recommendations
 
