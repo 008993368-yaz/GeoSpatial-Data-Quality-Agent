@@ -15,8 +15,8 @@ import { DetailView } from "./DetailView";
 import { ApplyResultsPanel } from "./ApplyResultsPanel";
 import { useApp } from "../../context/AppContext";
 import {
-  buildApplyCorrectionsActions,
-  hasPendingCustomCorrections,
+  canApplyCorrections,
+  getApplyCorrectionsDisabledReasons,
 } from "../../utils/buildApplyCorrectionsRequest";
 
 export function DashboardPage() {
@@ -44,24 +44,25 @@ export function DashboardPage() {
   const totalFeatures =
     typeof currentDataset?.feature_count === "number" ? currentDataset.feature_count : null;
 
-  const applyActionsCount = useMemo(() => {
-    if (!validationResult) return 0;
-    return buildApplyCorrectionsActions(
+  const applyEligibility = useMemo(
+    () => ({
+      hasDataset: Boolean(currentDataset?.dataset_id),
       validationResult,
       correctionDecisions,
       correctionOverrides,
-    ).length;
-  }, [validationResult, correctionDecisions, correctionOverrides]);
-
-  const pendingCustomEdits = useMemo(
-    () => hasPendingCustomCorrections(correctionDecisions, correctionOverrides),
-    [correctionDecisions, correctionOverrides],
+    }),
+    [currentDataset?.dataset_id, validationResult, correctionDecisions, correctionOverrides],
   );
 
-  const canApplyCorrections =
-    Boolean(
-      currentDataset?.dataset_id && validationResult && applyActionsCount > 0 && !pendingCustomEdits,
-    );
+  const applyEnabled = useMemo(() => canApplyCorrections(applyEligibility), [applyEligibility]);
+
+  const applyDisabledReasons = useMemo(
+    () => getApplyCorrectionsDisabledReasons(applyEligibility),
+    [applyEligibility],
+  );
+
+  const showApplyDisabledHints =
+    !applyEnabled && !isValidating && !isApplyingCorrections && applyDisabledReasons.length > 0;
 
   const validateWillClearFeedback =
     Object.keys(correctionDecisions).length > 0 || lastApplyCorrectionsResult !== null;
@@ -135,8 +136,9 @@ export function DashboardPage() {
             <CalciteButton
               kind="neutral"
               onClick={handleApplyCorrections}
-              disabled={!canApplyCorrections || isValidating || isApplyingCorrections}
+              disabled={!applyEnabled || isValidating || isApplyingCorrections}
               loading={isApplyingCorrections}
+              aria-describedby={showApplyDisabledHints ? "apply-corrections-hint" : undefined}
               label={
                 isApplyingCorrections
                   ? "Applying corrections…"
@@ -145,16 +147,32 @@ export function DashboardPage() {
             >
               {isApplyingCorrections ? "Applying…" : "Apply corrections"}
             </CalciteButton>
+            {showApplyDisabledHints && (
+              <div
+                id="apply-corrections-hint"
+                className="dashboard-apply-hints-block"
+                role="status"
+                aria-live="polite"
+              >
+                {applyDisabledReasons.length === 1 ? (
+                  <p className="dashboard-validation-status">{applyDisabledReasons[0]}</p>
+                ) : (
+                  <>
+                    <p className="dashboard-validation-status">Apply corrections is disabled because:</p>
+                    <ul className="dashboard-apply-hints">
+                      {applyDisabledReasons.map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
             {isValidating && (
               <div className="dashboard-validation-status" role="status" aria-live="polite">
                 <CalciteLoader scale="s" />
                 <span>Validation in progress. Issues and map will update when complete.</span>
               </div>
-            )}
-            {pendingCustomEdits && (
-              <p className="dashboard-validation-status" role="status">
-                Save custom fixes for all Custom issues before applying corrections.
-              </p>
             )}
             {isApplyingCorrections && (
               <div className="dashboard-validation-status" role="status" aria-live="polite">
