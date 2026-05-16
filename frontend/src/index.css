@@ -217,6 +217,23 @@ calcite-shell .app-main {
   flex-shrink: 0;
 }
 
+.dashboard-apply-hints-block {
+  flex: 1 1 100%;
+  min-width: min(100%, 22rem);
+}
+
+.dashboard-apply-hints-block .dashboard-validation-status {
+  margin: 0;
+}
+
+.dashboard-apply-hints {
+  margin: 0.35rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.45;
+}
+
 .apply-results-panel {
   margin-bottom: 1rem;
 }
