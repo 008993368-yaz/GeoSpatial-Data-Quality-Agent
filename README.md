@@ -673,6 +673,8 @@ Response: 200 OK
 
 **Suggestion schema (issue #86):** Validation results may include a `corrections` list. Each item is a **CorrectionSuggestion** (`api/models.py`): `method` (e.g. `buffer(0)`, `rename field`), `confidence` (0–1), `explanation` (natural-language), and `issue_index` (index into the `issues` list). The Recommendation Agent populates `state["corrections"]` in this shape. The apply-corrections API accepts **CorrectionAction** entries (`issue_index`, `action`: `approve` | `reject`) so the client can approve or reject each suggestion by issue index.
 
+**Custom manual edits (issue #106):** In the dashboard, choose **Custom** on a suggested fix to edit geometry as **WKT** and/or attributes as a **JSON object**, then apply. Optional fields on each approved action: `feature_id`, `geometry_wkt`, `attributes`. The server writes those overrides into the dataset GeoJSON when present. **Limitations:** there is no interactive map vertex editing; approve without overrides still does not run automated suggestion methods (e.g. `buffer(0)`); shapefile-only uploads are not mutated in place unless a GeoJSON sidecar exists.
+
 [Full API documentation](docs/api/README.md)
 
 ---

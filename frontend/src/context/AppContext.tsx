@@ -5,6 +5,7 @@ import type {
   UploadResponse,
   ValidationJobStatus,
   CorrectionDecision,
+  CorrectionOverride,
   ApplyCorrectionsResponse,
 } from "../types/api";
 import { buildApplyCorrectionsActions } from "../utils/buildApplyCorrectionsRequest";
@@ -32,6 +33,10 @@ type AppContextValue = {
   setCorrectionDecision: (issueIndex: number, decision: CorrectionDecision) => void;
   clearCorrectionDecision: (issueIndex: number) => void;
   resetCorrectionDecisions: () => void;
+  /** Saved manual edits for custom decisions (issue #106). */
+  correctionOverrides: Record<number, CorrectionOverride>;
+  setCorrectionOverride: (issueIndex: number, override: CorrectionOverride) => void;
+  clearCorrectionOverride: (issueIndex: number) => void;
   isApplyingCorrections: boolean;
   applyCorrectionsError: string | null;
   lastApplyCorrectionsResult: ApplyCorrectionsResponse | null;
@@ -49,6 +54,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [correctionDecisions, setCorrectionDecisions] = useState<Record<number, CorrectionDecision>>(
+    {},
+  );
+  const [correctionOverrides, setCorrectionOverrides] = useState<Record<number, CorrectionOverride>>(
     {},
   );
   const [isValidating, setIsValidating] = useState(false);
@@ -73,6 +81,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentDataset(data);
       setValidationResult(null);
       setCorrectionDecisions({});
+      setCorrectionOverrides({});
       setValidationError(null);
       setApplyCorrectionsError(null);
       setLastApplyCorrectionsResult(null);
@@ -95,6 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setValidationError(null);
     setValidationResult(null);
     setCorrectionDecisions({});
+    setCorrectionOverrides({});
     setApplyCorrectionsError(null);
     setLastApplyCorrectionsResult(null);
     setIsValidating(true);
@@ -121,6 +131,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = (await jobRes.json()) as ValidationJobStatus;
         if (job.status === "completed" && job.result) {
           setCorrectionDecisions({});
+          setCorrectionOverrides({});
           setValidationResult(job.result);
           break;
         }
@@ -139,6 +150,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function clearValidation() {
     setValidationResult(null);
     setCorrectionDecisions({});
+    setCorrectionOverrides({});
     setValidationError(null);
     setApplyCorrectionsError(null);
     setLastApplyCorrectionsResult(null);
@@ -146,7 +158,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function handleApplyCorrections() {
     if (!currentDataset?.dataset_id || !validationResult) return;
-    const corrections = buildApplyCorrectionsActions(validationResult, correctionDecisions);
+    const corrections = buildApplyCorrectionsActions(
+      validationResult,
+      correctionDecisions,
+      correctionOverrides,
+    );
     if (corrections.length === 0) return;
 
     setApplyCorrectionsError(null);
@@ -184,10 +200,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       delete next[issueIndex];
       return next;
     });
+    clearCorrectionOverride(issueIndex);
+  }
+
+  function setCorrectionOverride(issueIndex: number, override: CorrectionOverride) {
+    setCorrectionOverrides((prev) => ({ ...prev, [issueIndex]: override }));
+  }
+
+  function clearCorrectionOverride(issueIndex: number) {
+    setCorrectionOverrides((prev) => {
+      const next = { ...prev };
+      delete next[issueIndex];
+      return next;
+    });
   }
 
   function resetCorrectionDecisions() {
     setCorrectionDecisions({});
+    setCorrectionOverrides({});
   }
 
   function dismissLastApplyResult() {
@@ -221,6 +251,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCorrectionDecision,
         clearCorrectionDecision,
         resetCorrectionDecisions,
+        correctionOverrides,
+        setCorrectionOverride,
+        clearCorrectionOverride,
         isApplyingCorrections,
         applyCorrectionsError,
         lastApplyCorrectionsResult,
