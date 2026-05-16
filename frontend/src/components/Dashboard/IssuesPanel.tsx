@@ -8,6 +8,7 @@ import {
 
 import type { CorrectionDecision, GeometryIssue } from "../../types/api";
 import { useApp } from "../../context/AppContext";
+import { correctionIndicesFromIssues } from "../../utils/correctionSuggestions";
 import { categorizeIssueType } from "../../utils/reportSummary";
 
 export type IssuesPanelProps = {
@@ -17,24 +18,6 @@ export type IssuesPanelProps = {
 
 type TypeFilter = "all" | "geometry" | "attribute" | "topology";
 type SeverityFilter = "all" | "critical" | "warning";
-
-function correctionIndicesFromIssues(
-  issues: GeometryIssue[],
-  corrections: { issue_index: number }[] | null | undefined,
-): Set<number> {
-  const withSuggestion = new Set<number>();
-  if (!corrections?.length) return withSuggestion;
-  for (const c of corrections) {
-    if (
-      typeof c.issue_index === "number" &&
-      c.issue_index >= 0 &&
-      c.issue_index < issues.length
-    ) {
-      withSuggestion.add(c.issue_index);
-    }
-  }
-  return withSuggestion;
-}
 
 function decisionShortLabel(d: CorrectionDecision): string {
   if (d === "approve") return "A";
@@ -46,8 +29,8 @@ export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
   const { validationResult, correctionDecisions, correctionOverrides } = useApp();
 
   const indicesWithCorrection = useMemo(
-    () => correctionIndicesFromIssues(issues, validationResult?.corrections),
-    [issues, validationResult?.corrections],
+    () => correctionIndicesFromIssues(issues.length, validationResult?.corrections),
+    [issues.length, validationResult?.corrections],
   );
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");

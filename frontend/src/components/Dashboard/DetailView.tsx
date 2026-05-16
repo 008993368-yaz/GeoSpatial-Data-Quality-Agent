@@ -1,16 +1,30 @@
-import { useMemo, useState } from "react";
-import { CalciteButton, CalciteDialog } from "@esri/calcite-components-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalciteButton, CalciteDialog, CalciteNotice } from "@esri/calcite-components-react";
 
 import { useApp } from "../../context/AppContext";
-import type { CorrectionSuggestion, GeometryIssue } from "../../types/api";
+import type { CorrectionDecision, CorrectionSuggestion, GeometryIssue } from "../../types/api";
+import { getFirstCorrectionIssueIndex } from "../../utils/correctionSuggestions";
 import { CustomCorrectionEditor } from "./CustomCorrectionEditor";
 
 export type DetailViewProps = {
   selectedIssueIndex: number | null;
 };
 
+function validationCalloutKey(
+  datasetId: string | undefined,
+  corrections: { issue_index: number }[] | null | undefined,
+): string {
+  const indices = (corrections ?? [])
+    .map((c) => c.issue_index)
+    .filter((i) => typeof i === "number")
+    .sort((a, b) => a - b)
+    .join(",");
+  return `${datasetId ?? ""}:${indices}`;
+}
+
 export function DetailView({ selectedIssueIndex }: DetailViewProps) {
   const [resetAllConfirmOpen, setResetAllConfirmOpen] = useState(false);
+  const [calloutDismissed, setCalloutDismissed] = useState(false);
   const {
     validationResult,
     currentDataset,
@@ -23,6 +37,15 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
     resetCorrectionDecisions,
     isApplyingCorrections,
   } = useApp();
+
+  const calloutResetKey = validationCalloutKey(
+    validationResult?.dataset_id,
+    validationResult?.corrections,
+  );
+
+  useEffect(() => {
+    setCalloutDismissed(false);
+  }, [calloutResetKey]);
 
   const issue: GeometryIssue | null =
     selectedIssueIndex !== null && validationResult?.issues?.[selectedIssueIndex]
@@ -38,6 +61,15 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
     );
   }, [selectedIssueIndex, validationResult?.corrections]);
 
+  const firstCorrectionIssueIndex = useMemo(
+    () =>
+      getFirstCorrectionIssueIndex(
+        validationResult?.corrections,
+        validationResult?.issues?.length ?? 0,
+      ),
+    [validationResult?.corrections, validationResult?.issues?.length],
+  );
+
   const hasAnyDecisions = Object.keys(correctionDecisions).length > 0;
 
   if (!issue || selectedIssueIndex === null) {
@@ -46,6 +78,20 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
 
   const issueIndex = selectedIssueIndex;
   const decision = correctionDecisions[issueIndex];
+
+  const showApproveRejectCallout =
+    Boolean(suggestion) &&
+    firstCorrectionIssueIndex !== null &&
+    issueIndex === firstCorrectionIssueIndex &&
+    decision === undefined &&
+    !calloutDismissed;
+
+  function handleCorrectionDecision(choice: CorrectionDecision) {
+    if (choice === "approve" || choice === "reject") {
+      setCalloutDismissed(true);
+    }
+    setCorrectionDecision(issueIndex, choice);
+  }
 
   return (
     <div className="detail-view">
@@ -120,15 +166,36 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
               <strong>Explanation:</strong> {suggestion.explanation}
             </p>
 
-            <div className="correction-actions" role="group" aria-labelledby="correction-actions-label">
+            <div
+              className={`correction-actions${showApproveRejectCallout ? " correction-actions--onboarding" : ""}`}
+              role="group"
+              aria-labelledby="correction-actions-label"
+            >
               <p id="correction-actions-label" className="correction-actions__label">
                 How should we handle this suggestion?
               </p>
+              {showApproveRejectCallout && (
+                <CalciteNotice
+                  open
+                  kind="info"
+                  icon
+                  scale="s"
+                  width="full"
+                  closable
+                  className="correction-callout"
+                  onCalciteNoticeClose={() => setCalloutDismissed(true)}
+                >
+                  <div slot="message">
+                    Choose <strong>Approve</strong> or <strong>Reject</strong> to record your decision. You need at
+                    least one choice before <strong>Apply corrections</strong> is enabled.
+                  </div>
+                </CalciteNotice>
+              )}
               <div className="correction-actions__buttons">
                 <CalciteButton
                   kind={decision === "approve" ? "brand" : "neutral"}
                   appearance={decision === "approve" ? "solid" : "outline"}
-                  onClick={() => setCorrectionDecision(issueIndex, "approve")}
+                  onClick={() => handleCorrectionDecision("approve")}
                   disabled={isApplyingCorrections}
                   label="Approve suggested fix"
                 >
@@ -137,7 +204,7 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                 <CalciteButton
                   kind={decision === "reject" ? "brand" : "neutral"}
                   appearance={decision === "reject" ? "solid" : "outline"}
-                  onClick={() => setCorrectionDecision(issueIndex, "reject")}
+                  onClick={() => handleCorrectionDecision("reject")}
                   disabled={isApplyingCorrections}
                   label="Reject suggested fix"
                 >
@@ -146,7 +213,7 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
                 <CalciteButton
                   kind={decision === "custom" ? "brand" : "neutral"}
                   appearance={decision === "custom" ? "solid" : "outline"}
-                  onClick={() => setCorrectionDecision(issueIndex, "custom")}
+                  onClick={() => handleCorrectionDecision("custom")}
                   disabled={isApplyingCorrections}
                   label="Use a custom fix you will edit before apply"
                 >

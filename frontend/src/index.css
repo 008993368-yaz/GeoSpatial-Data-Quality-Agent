@@ -444,6 +444,17 @@ calcite-shell .app-main {
   font-weight: 600;
 }
 
+.correction-callout {
+  margin-bottom: 0.75rem;
+}
+
+.correction-actions--onboarding .correction-actions__buttons {
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 121, 193, 0.25);
+  background: rgba(0, 121, 193, 0.04);
+}
+
 .correction-actions__buttons {
   display: flex;
   flex-wrap: wrap;
