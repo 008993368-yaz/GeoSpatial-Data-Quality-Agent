@@ -70,10 +70,11 @@ test("map page links to dashboard after validation (issue #120)", async ({ page 
   await uploadDataset(page);
   await page.goto("/#/map");
 
-  await page
-    .getByRole("region", { name: "Validate dataset" })
-    .getByRole("button", { name: /^Validate dataset$/i })
-    .click();
+  const validateBlock = page.locator("calcite-block.map-validate-block");
+  await validateBlock.evaluate((el) => {
+    (el as HTMLElement & { expanded: boolean }).expanded = true;
+  });
+  await validateBlock.getByRole("button", { name: /^Validate dataset$/i }).last().click();
 
   const reviewButton = page.getByRole("button", { name: /Review issues on Dashboard/i });
   await expect(reviewButton).toBeVisible({ timeout: 30_000 });
@@ -81,5 +82,5 @@ test("map page links to dashboard after validation (issue #120)", async ({ page 
 
   await expect(page).toHaveURL(/#\/dashboard/);
   await expect(page.getByRole("heading", { name: /Validation dashboard/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Issues/i })).toBeVisible();
+  await expect(page.locator(".dashboard-panel--issues")).toBeVisible();
 });
