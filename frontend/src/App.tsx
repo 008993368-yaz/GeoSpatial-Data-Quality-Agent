@@ -5,6 +5,7 @@ import { UploadPage } from "./pages/UploadPage";
 import { MapPage } from "./pages/MapPage";
 import { StatusPage } from "./pages/StatusPage";
 import { DashboardPage } from "./components/Dashboard/DashboardPage";
+import { ReportPage } from "./pages/ReportPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="upload" element={<UploadPage />} />
             <Route path="map" element={<MapPage />} />
             <Route path="status" element={<StatusPage />} />
+            <Route path="report" element={<ReportPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

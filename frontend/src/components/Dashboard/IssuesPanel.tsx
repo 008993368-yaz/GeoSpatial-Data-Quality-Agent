@@ -8,6 +8,7 @@ import {
 
 import type { CorrectionDecision, GeometryIssue } from "../../types/api";
 import { useApp } from "../../context/AppContext";
+import { categorizeIssueType } from "../../utils/reportSummary";
 
 export type IssuesPanelProps = {
   issues: GeometryIssue[];
@@ -16,12 +17,6 @@ export type IssuesPanelProps = {
 
 type TypeFilter = "all" | "geometry" | "attribute" | "topology";
 type SeverityFilter = "all" | "critical" | "warning";
-
-function categorizeType(type: string): TypeFilter {
-  if (type.startsWith("attribute_")) return "attribute";
-  if (type.startsWith("topology_")) return "topology";
-  return "geometry";
-}
 
 function correctionIndicesFromIssues(
   issues: GeometryIssue[],
@@ -62,7 +57,7 @@ export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
     return issues
       .map((issue, index) => ({ issue, index }))
       .filter(({ issue }) => {
-      const t = categorizeType(issue.type || "");
+      const t = categorizeIssueType(issue.type || "");
       if (typeFilter !== "all" && t !== typeFilter) return false;
 
       const sev = (issue.severity || "").toLowerCase();

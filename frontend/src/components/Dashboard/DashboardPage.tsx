@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CalcitePanel,
   CalciteButton,
@@ -36,6 +37,7 @@ export function DashboardPage() {
     clearValidationError,
     clearApplyCorrectionsError,
   } = useApp();
+  const navigate = useNavigate();
   const [selectedIssueIndex, setSelectedIssueIndex] = useState<number | null>(null);
   const [validateConfirmOpen, setValidateConfirmOpen] = useState(false);
 
@@ -120,6 +122,16 @@ export function DashboardPage() {
             >
               {isValidating ? "Validating…" : "Run validation"}
             </CalciteButton>
+            {validationResult ? (
+              <CalciteButton
+                kind="neutral"
+                appearance="outline"
+                onClick={() => navigate("/report")}
+                label="Open quality report"
+              >
+                View report
+              </CalciteButton>
+            ) : null}
             <CalciteButton
               kind="neutral"
               onClick={handleApplyCorrections}

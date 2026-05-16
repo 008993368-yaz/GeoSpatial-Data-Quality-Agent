@@ -123,6 +123,39 @@ class ValidateRequest(BaseModel):
     dataset_id: str = Field(..., description="Dataset identifier (from upload) to validate")
 
 
+class TopologyChecksConfig(BaseModel):
+    """Topology validation toggles exposed in reports (issue #12)."""
+
+    gaps: bool = True
+    overlaps: bool = True
+    connectivity: bool = True
+
+
+class ValidationConfigResponse(BaseModel):
+    """Public validation pipeline settings for quality reports (issue #12)."""
+
+    pipeline_steps: List[str] = Field(
+        ...,
+        description="Ordered LangGraph pipeline steps",
+    )
+    geometry_validation_enabled: bool = True
+    attribute_sample_size: int = 500
+    attribute_max_records_in_prompt: int = 10
+    openai_model: str = "gpt-4o-mini"
+    topology_checks: TopologyChecksConfig = Field(default_factory=TopologyChecksConfig)
+
+
+class QualityReportRequest(BaseModel):
+    """Client-built quality report document for server-side export (issue #12)."""
+
+    generated_at: str
+    dataset: UploadResponse
+    validation: ValidationResult
+    summary: Dict[str, Any] = Field(..., description="Issue summary counts and breakdowns")
+    correction_decisions: Optional[Dict[str, Any]] = None
+    validation_config: Optional[ValidationConfigResponse] = None
+
+
 class ErrorResponse(BaseModel):
     """Standard error response for failed requests."""
 

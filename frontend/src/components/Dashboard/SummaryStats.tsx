@@ -1,4 +1,5 @@
 import type { GeometryIssue } from "../../types/api";
+import { computeIssueSummary } from "../../utils/reportSummary";
 
 export type SummaryStatsProps = {
   totalFeatures?: number | null;
@@ -6,9 +7,7 @@ export type SummaryStatsProps = {
 };
 
 export function SummaryStats({ totalFeatures, issues }: SummaryStatsProps) {
-  const totalIssues = issues.length;
-  const critical = issues.filter((i) => i.severity.toLowerCase() === "critical").length;
-  const warning = issues.filter((i) => i.severity.toLowerCase() === "warning").length;
+  const { totalIssues, critical, warning } = computeIssueSummary(issues);
 
   return (
     <div className="summary-stats">

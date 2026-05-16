@@ -19,7 +19,23 @@ export type UploadResponse = {
   filename: string;
   /** Optional total feature count for the dataset (from upload metadata). */
   feature_count?: number;
+  geometry_type?: string | null;
+  crs?: string | null;
   bounds?: number[] | null;
+};
+
+/** GET /validation/config — public validation pipeline settings (issue #12). */
+export type ValidationConfigResponse = {
+  pipeline_steps: string[];
+  geometry_validation_enabled: boolean;
+  attribute_sample_size: number;
+  attribute_max_records_in_prompt: number;
+  openai_model: string;
+  topology_checks: {
+    gaps: boolean;
+    overlaps: boolean;
+    connectivity: boolean;
+  };
 };
 
 export type CorrectionSuggestion = {

@@ -1,17 +1,20 @@
 """API route handlers."""
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, Response
 from api.models import (
     ApplyCorrectionsRequest,
     ApplyCorrectionsResponse,
     CorrectionAction,
     ErrorCode,
     ErrorResponse,
+    QualityReportRequest,
     UploadResponse,
+    ValidationConfigResponse,
     ValidationJobStatus,
     ValidateRequest,
     ValidationResult,
@@ -25,6 +28,7 @@ from services.file_handler import (
     save_upload,
 )
 from services.correction_applier import apply_correction_overrides
+from services.report_builder import export_report_bytes, get_validation_config
 from services.geojson_parser import parse_geojson_metadata
 from services.shapefile_parser import parse_shapefile_metadata
 from agents.orchestrator import empty_state, validation_graph
@@ -380,4 +384,44 @@ async def apply_corrections(body: ApplyCorrectionsRequest):
         skipped=skipped,
         download_url=download_url,
         export_note=export_note,
+    )
+
+
+@router.get(
+    "/validation/config",
+    response_model=ValidationConfigResponse,
+    responses={200: {"description": "Public validation pipeline settings for reports"}},
+)
+async def get_validation_config_endpoint():
+    """Return validation settings used for quality reports (issue #12)."""
+    return ValidationConfigResponse(**get_validation_config())
+
+
+@router.post(
+    "/reports/export",
+    responses={
+        200: {"description": "Exported quality report file"},
+        400: {"description": "Invalid format", "model": ErrorResponse},
+    },
+)
+async def export_quality_report(
+    body: QualityReportRequest,
+    format: Literal["json", "markdown"] = Query("json", alias="format"),
+):
+    """
+    Export a client-built quality report as JSON or Markdown (issue #12).
+    """
+    payload = body.model_dump()
+    try:
+        content, media_type, filename = export_report_bytes(payload, format)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"detail": str(exc), "code": "INVALID_FORMAT"},
+        ) from exc
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

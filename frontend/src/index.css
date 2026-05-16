@@ -556,3 +556,178 @@ calcite-shell .app-main {
     flex-direction: row;
   }
 }
+
+/* Quality report (issue #12) */
+.page-section--report {
+  max-width: 960px;
+}
+
+.quality-report__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.quality-report__header {
+  margin-bottom: 1rem;
+}
+
+.quality-report__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+}
+
+.quality-report__meta {
+  margin: 0.15rem 0;
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
+
+.quality-report__panel {
+  margin-bottom: 1rem;
+}
+
+.quality-report__dl {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+.quality-report__dl > div {
+  display: contents;
+}
+
+.quality-report__dl dt {
+  font-weight: 600;
+  color: #4a4a4a;
+}
+
+.quality-report__dl dd {
+  margin: 0;
+}
+
+.quality-report__charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .quality-report__charts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.quality-report-chart__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.quality-report-chart__row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.quality-report-chart__track {
+  height: 0.65rem;
+  background: #e8e8e8;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.quality-report-chart__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 3px;
+}
+
+.quality-report-chart__fill--critical {
+  background: #c0392b;
+}
+
+.quality-report-chart__fill--warning {
+  background: #e67e22;
+}
+
+.quality-report-chart__fill--geometry {
+  background: #0079c1;
+}
+
+.quality-report-chart__fill--attribute {
+  background: #8844d8;
+}
+
+.quality-report-chart__fill--topology {
+  background: #2e7d32;
+}
+
+.quality-report-chart__value {
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.quality-report__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.quality-report__table th,
+.quality-report__table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e8e8e8;
+  text-align: left;
+  vertical-align: top;
+}
+
+.quality-report__table th {
+  font-weight: 600;
+  background: #f5f5f5;
+}
+
+.quality-report__table-wrap {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.quality-report__hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: #6a6a6a;
+}
+
+.quality-report__decisions {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+@media print {
+  .no-print,
+  calcite-shell-panel,
+  .app-nav,
+  .skip-link,
+  calcite-navigation {
+    display: none !important;
+  }
+
+  .app-main {
+    padding: 0 !important;
+  }
+
+  .quality-report__panel {
+    break-inside: avoid;
+  }
+
+  .quality-report__table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+}
