@@ -778,7 +778,7 @@ Located in `datasets/test/`:
 - [ ] Full dashboard implementation
 - [ ] Interactive correction workflow
 - [ ] Report generation
-- [ ] User testing
+- [x] User testing — [protocol & kit](docs/user-testing/README.md) ready; [pilot findings](docs/user-testing/pilot-findings.md) (synthetic); run live sessions with 3–5 participants to close issue #13
 
 ### **Phase 4: Evaluation & Documentation** 📅 (Weeks 12-14)
 - [ ] Formal evaluation on test datasets
