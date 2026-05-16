@@ -69,6 +69,17 @@ function applyCorrectionsButton(page: Page) {
   return page.getByRole("button", { name: /Apply correction choices to the server/i });
 }
 
+test("dashboard shows empty state with upload link before dataset loaded", async ({ page }) => {
+  await page.goto("/#/dashboard");
+  const dashboard = page.getByLabel("Validation dashboard");
+  await expect(page.getByRole("heading", { name: /Validation dashboard/i })).toBeVisible();
+  await expect(dashboard.getByText(/No dataset loaded/i)).toBeVisible();
+  const uploadLink = dashboard.getByRole("link", { name: "Upload" });
+  await expect(uploadLink).toBeVisible();
+  await uploadLink.click();
+  await expect(page).toHaveURL(/#\/upload/);
+});
+
 test.describe("Apply corrections disabled hints (issue #116)", () => {
   test("shows hint to run validation before validation has run", async ({ page }) => {
     await uploadDataset(page);

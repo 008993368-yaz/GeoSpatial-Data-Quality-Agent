@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CalcitePanel,
   CalciteButton,
@@ -87,8 +87,8 @@ export function DashboardPage() {
       </h2>
       {!currentDataset ? (
         <p className="empty-state">
-          Upload and validate a dataset first. The dashboard will show issues, stats, and map view
-          once validation has run.
+          No dataset loaded. Upload a dataset on the <Link to="/upload">Upload</Link> page first,
+          then return here to run validation and view issues, stats, and the map.
         </p>
       ) : (
         <>
