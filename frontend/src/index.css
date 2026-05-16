@@ -380,6 +380,19 @@ calcite-shell .app-main {
   margin-top: 1rem;
 }
 
+.map-validate-block {
+  margin: 0 1rem;
+}
+
+.map-dashboard-cta {
+  margin: 0 1rem 1rem;
+  padding: 0 0 0.25rem;
+}
+
+.map-dashboard-cta .page-section-description {
+  margin-bottom: 0.75rem;
+}
+
 .validation-summary-inline {
   margin-top: 0.5rem;
 }

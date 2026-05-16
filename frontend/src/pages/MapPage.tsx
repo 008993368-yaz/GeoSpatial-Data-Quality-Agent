@@ -1,4 +1,5 @@
 import { CalciteBlock, CalciteButton } from "@esri/calcite-components-react";
+import { useNavigate } from "react-router-dom";
 import { MapViewer } from "../components/Map/MapViewer";
 import { useApp } from "../context/AppContext";
 
@@ -11,6 +12,7 @@ export function MapPage() {
     validationError,
     handleValidate,
   } = useApp();
+  const navigate = useNavigate();
 
   return (
     <section className="page-section page-section--map" aria-labelledby="map-heading">
@@ -54,6 +56,21 @@ export function MapPage() {
               </p>
             )}
           </CalciteBlock>
+          {validationResult ? (
+            <div className="map-dashboard-cta" role="region" aria-label="Review issues on Dashboard">
+              <p className="page-section-description">
+                Review issue details, filters, and correction choices on the Dashboard.
+              </p>
+              <CalciteButton
+                kind="brand"
+                appearance="outline"
+                onClick={() => navigate("/dashboard")}
+                label="Review issues on Dashboard"
+              >
+                Review issues on Dashboard
+              </CalciteButton>
+            </div>
+          ) : null}
           <MapViewer
             datasetId={currentDataset.dataset_id}
             bounds={currentDataset.bounds ?? null}
