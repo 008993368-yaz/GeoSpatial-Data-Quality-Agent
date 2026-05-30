@@ -23,11 +23,18 @@ export function SummaryStats({ totalFeatures, issues }: SummaryStatsProps) {
       </div>
       <div className="summary-stats__item">
         <span className="summary-stats__label">Critical</span>
-        <span className="summary-stats__value">{critical}</span>
+        <span
+          className="summary-stats__value"
+          data-tone={critical > 0 ? "critical" : undefined}
+        >
+          {critical}
+        </span>
       </div>
       <div className="summary-stats__item">
         <span className="summary-stats__label">Warnings</span>
-        <span className="summary-stats__value">{warning}</span>
+        <span className="summary-stats__value" data-tone={warning > 0 ? "warning" : undefined}>
+          {warning}
+        </span>
       </div>
     </div>
   );

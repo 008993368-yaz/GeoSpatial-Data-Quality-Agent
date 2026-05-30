@@ -10,6 +10,7 @@ import type { CorrectionDecision, GeometryIssue } from "../../types/api";
 import { useApp } from "../../context/AppContext";
 import { correctionIndicesFromIssues } from "../../utils/correctionSuggestions";
 import { categorizeIssueType } from "../../utils/reportSummary";
+import { severityTone } from "../../utils/severity";
 
 export type IssuesPanelProps = {
   issues: GeometryIssue[];
@@ -130,10 +131,16 @@ export function IssuesPanel({ issues, onSelectIssueIndex }: IssuesPanelProps) {
               <button
                 type="button"
                 className="issues-panel-item"
+                data-severity={severityTone(issue.severity)}
                 onClick={() => handleRowClick(index)}
               >
                 <span className="issues-panel-item__type">{issue.type}</span>
-                <span className="issues-panel-item__severity">{issue.severity}</span>
+                <span
+                  className="issues-panel-item__severity"
+                  data-severity={severityTone(issue.severity)}
+                >
+                  {issue.severity}
+                </span>
                 <span className="issues-panel-item__feature">
                   {issue.feature_id !== undefined && issue.feature_id !== null
                     ? `Feature ${String(issue.feature_id)}`
