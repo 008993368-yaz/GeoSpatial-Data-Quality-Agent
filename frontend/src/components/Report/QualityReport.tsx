@@ -3,6 +3,7 @@ import { CalciteButton, CalcitePanel } from "@esri/calcite-components-react";
 import type { QualityReportPayload } from "../../utils/reportSummary";
 import { APPENDIX_ISSUE_LIMIT } from "../../utils/reportSummary";
 import { downloadJson, downloadMarkdown, printReport } from "../../utils/exportReport";
+import { severityTone } from "../../utils/severity";
 
 export type QualityReportProps = {
   payload: QualityReportPayload;
@@ -58,6 +59,12 @@ export function QualityReport({ payload }: QualityReportProps) {
   const issues = validation.issues;
   const appendixIssues = issues.slice(0, APPENDIX_ISSUE_LIMIT);
   const corrections = validation.corrections ?? [];
+  const hasIssues = summary.totalIssues > 0;
+  const reportStatus = !hasIssues
+    ? { tone: "clean", label: "No issues found" }
+    : summary.critical > 0
+      ? { tone: "critical", label: `${summary.critical} critical · ${summary.totalIssues} total` }
+      : { tone: "warning", label: `${summary.totalIssues} issue${summary.totalIssues === 1 ? "" : "s"} found` };
 
   const topTypes = Object.entries(summary.byType)
     .sort((a, b) => b[1] - a[1])
@@ -96,7 +103,12 @@ export function QualityReport({ payload }: QualityReportProps) {
 
       <div id="quality-report-print-root" className="quality-report__body">
         <header className="quality-report__header">
-          <h3 className="quality-report__title">Quality assessment report</h3>
+          <div className="quality-report__title-row">
+            <h3 className="quality-report__title">Quality assessment report</h3>
+            <span className="report-status-pill" data-tone={reportStatus.tone}>
+              {reportStatus.label}
+            </span>
+          </div>
           <p className="quality-report__meta">
             <strong>{dataset.filename}</strong> · {dataset.dataset_id}
           </p>
@@ -160,21 +172,26 @@ export function QualityReport({ payload }: QualityReportProps) {
         ) : null}
 
         <CalcitePanel heading="Summary" className="quality-report__panel">
-          <div className="summary-stats">
-            <div className="summary-stats__item">
-              <span className="summary-stats__label">Total issues</span>
-              <span className="summary-stats__value">{summary.totalIssues}</span>
+          <div className="report-kpis">
+            <div className="report-kpi">
+              <span className="report-kpi__value">{summary.totalIssues}</span>
+              <span className="report-kpi__label">Total issues</span>
             </div>
-            <div className="summary-stats__item">
-              <span className="summary-stats__label">Critical</span>
-              <span className="summary-stats__value">{summary.critical}</span>
+            <div className="report-kpi" data-tone={summary.critical > 0 ? "critical" : undefined}>
+              <span className="report-kpi__value">{summary.critical}</span>
+              <span className="report-kpi__label">Critical</span>
             </div>
-            <div className="summary-stats__item">
-              <span className="summary-stats__label">Warnings</span>
-              <span className="summary-stats__value">{summary.warning}</span>
+            <div className="report-kpi" data-tone={summary.warning > 0 ? "warning" : undefined}>
+              <span className="report-kpi__value">{summary.warning}</span>
+              <span className="report-kpi__label">Warnings</span>
             </div>
           </div>
 
+          {!hasIssues ? (
+            <p className="report-clean-note">
+              ✓ No quality issues were detected across geometry, attribute, and topology checks.
+            </p>
+          ) : (
           <div className="quality-report__charts">
             <BarChart
               label="By severity"
@@ -214,6 +231,7 @@ export function QualityReport({ payload }: QualityReportProps) {
               ]}
             />
           </div>
+          )}
         </CalcitePanel>
 
         <CalcitePanel heading="Issue breakdown" className="quality-report__panel">
@@ -272,8 +290,17 @@ export function QualityReport({ payload }: QualityReportProps) {
                     {appendixIssues.map((issue, index) => (
                       <tr key={index}>
                         <td>{index}</td>
-                        <td>{issue.type}</td>
-                        <td>{issue.severity}</td>
+                        <td>
+                          <code className="type-chip">{issue.type}</code>
+                        </td>
+                        <td>
+                          <span
+                            className="severity-badge"
+                            data-severity={severityTone(issue.severity)}
+                          >
+                            {issue.severity}
+                          </span>
+                        </td>
                         <td>
                           {issue.feature_id !== undefined && issue.feature_id !== null
                             ? String(issue.feature_id)

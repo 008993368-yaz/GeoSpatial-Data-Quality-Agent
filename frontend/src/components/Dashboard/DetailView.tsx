@@ -4,6 +4,7 @@ import { CalciteButton, CalciteDialog, CalciteNotice } from "@esri/calcite-compo
 import { useApp } from "../../context/AppContext";
 import type { CorrectionDecision, CorrectionSuggestion, GeometryIssue } from "../../types/api";
 import { getFirstCorrectionIssueIndex } from "../../utils/correctionSuggestions";
+import { severityTone } from "../../utils/severity";
 import { CustomCorrectionEditor } from "./CustomCorrectionEditor";
 
 export type DetailViewProps = {
@@ -129,7 +130,10 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
           <strong>Type:</strong> {issue.type}
         </p>
         <p>
-          <strong>Severity:</strong> {issue.severity}
+          <strong>Severity:</strong>{" "}
+          <span className="severity-badge" data-severity={severityTone(issue.severity)}>
+            {issue.severity}
+          </span>
         </p>
         {issue.feature_id !== undefined && issue.feature_id !== null && (
           <p>
@@ -157,11 +161,31 @@ export function DetailView({ selectedIssueIndex }: DetailViewProps) {
         ) : (
           <>
             <p>
-              <strong>Method:</strong> {suggestion.method}
+              <strong>Method:</strong> <code className="detail-view__method">{suggestion.method}</code>
             </p>
-            <p>
-              <strong>Confidence:</strong> {(suggestion.confidence * 100).toFixed(0)}%
-            </p>
+            <div className="detail-view__confidence">
+              <strong>Confidence:</strong>
+              <span
+                className="confidence-bar"
+                role="img"
+                aria-label={`Confidence ${(suggestion.confidence * 100).toFixed(0)} percent`}
+              >
+                <span
+                  className="confidence-bar__fill"
+                  data-level={
+                    suggestion.confidence >= 0.75
+                      ? "high"
+                      : suggestion.confidence >= 0.4
+                        ? "medium"
+                        : "low"
+                  }
+                  style={{ width: `${Math.round(suggestion.confidence * 100)}%` }}
+                />
+              </span>
+              <span className="confidence-bar__value">
+                {(suggestion.confidence * 100).toFixed(0)}%
+              </span>
+            </div>
             <p>
               <strong>Explanation:</strong> {suggestion.explanation}
             </p>

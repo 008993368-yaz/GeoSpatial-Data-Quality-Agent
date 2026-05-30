@@ -4,7 +4,10 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ["@arcgis/core"],
+    // @arcgis/core has no root entry and lazy-loads many submodules at runtime.
+    // Excluding it from pre-bundling serves its ESM directly and avoids
+    // "Failed to fetch dynamically imported module" basemap errors.
+    exclude: ["@arcgis/core"],
   },
   build: {
     rollupOptions: {
