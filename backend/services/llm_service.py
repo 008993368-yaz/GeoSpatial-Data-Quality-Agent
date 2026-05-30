@@ -60,15 +60,28 @@ def _default_llm(config: Optional[AttributeValidationConfig] = None) -> Supports
     Construct a default ChatOpenAI client.
 
     Uses OPENAI_API_KEY / OPENAI_MODEL from core.config. Tests should inject a fake llm instead.
-    Raises RuntimeError if langchain_openai is not installed.
+    Raises RuntimeError if langchain_openai is not installed or no API key is configured.
+
+    Note: the API key is read from settings.OPENAI_API_KEY (i.e. the backend .env loaded by
+    pydantic-settings) and passed explicitly, so it works without OPENAI_API_KEY also being
+    set as an OS environment variable.
     """
     if ChatOpenAI is None:
         raise RuntimeError(
             "langchain_openai is not installed. Install backend requirements or "
             "pass an explicit `llm` instance to validate_attributes_with_llm."
         )
+    if not settings.OPENAI_API_KEY:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not configured. Set it in the backend .env or pass an "
+            "explicit `llm` instance."
+        )
     cfg = config or AttributeValidationConfig()
-    return ChatOpenAI(model=cfg.model, max_tokens=cfg.max_tokens)  # type: ignore[call-arg]
+    return ChatOpenAI(  # type: ignore[call-arg]
+        model=cfg.model,
+        max_tokens=cfg.max_tokens,
+        api_key=settings.OPENAI_API_KEY,
+    )
 
 
 def build_attribute_validation_prompt(
@@ -215,10 +228,12 @@ def validate_attributes_with_llm(
         return []
 
     prompt = build_attribute_validation_prompt(attribute_records, per_field_values)
-    client = llm or _default_llm(config)
     try:
+        client = llm or _default_llm(config)
         response = client.invoke(prompt)
     except Exception:
+        # Fail-safe: missing/invalid credentials or API errors yield no issues
+        # rather than failing the whole validation pipeline.
         return []
 
     return parse_llm_attribute_issues(response)
@@ -321,10 +336,12 @@ def get_recommendation_suggestions_from_llm(
     prompt = build_recommendation_prompt(issues)
     if not prompt:
         return []
-    client = llm or _default_llm()
     try:
+        client = llm or _default_llm()
         response = client.invoke(prompt)
     except Exception:
+        # Fail-safe: fall back to rule-based suggestions (caller pads with defaults)
+        # when credentials are missing or the API call fails.
         return []
     parsed = parse_recommendation_suggestions(response)
     # Pad to match issue count if LLM returned fewer

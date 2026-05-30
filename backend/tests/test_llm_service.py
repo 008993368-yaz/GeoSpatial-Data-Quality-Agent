@@ -115,6 +115,31 @@ def test_validate_attributes_with_llm_empty_input_returns_empty_and_skips_llm():
     assert llm.last_prompt is None
 
 
+def test_validate_attributes_with_llm_no_api_key_degrades_gracefully(monkeypatch):
+    """Without an API key and no injected LLM, return [] instead of raising.
+
+    Regression: _default_llm() used to raise during client construction outside the
+    try/except, which surfaced as a 500 from POST /validate.
+    """
+    from core.config import settings
+
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", None, raising=False)
+    records: List[Dict[str, Any]] = [{"feature_id": 1, "name": "Main St"}]
+
+    # No llm injected and no key configured -> graceful empty result, no exception.
+    assert validate_attributes_with_llm(records) == []
+
+
+def test_default_llm_raises_without_api_key(monkeypatch):
+    """_default_llm should raise (not silently build a keyless client) when no key is set."""
+    from core.config import settings
+    from services.llm_service import _default_llm
+
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", None, raising=False)
+    with pytest.raises(RuntimeError):
+        _default_llm()
+
+
 # --- Recommendation suggestions (issue #87) ---
 
 
