@@ -1,7 +1,20 @@
 """Pydantic schemas for API request/response."""
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _to_native(value: Any) -> Any:
+    """Coerce numpy scalars (e.g. int32 from shapefile/GeoJSON id columns) to native
+    Python types so Pydantic can JSON-serialize them. Leaves other values untouched."""
+    item = getattr(value, "item", None)
+    if callable(item) and getattr(value, "ndim", None) == 0:
+        # numpy scalar: 0-dim array-like with .item()
+        try:
+            return value.item()
+        except Exception:
+            return value
+    return value
 
 
 class GeometryIssue(BaseModel):
@@ -12,6 +25,11 @@ class GeometryIssue(BaseModel):
     severity: str = Field(..., description="critical or warning")
     location: Optional[List[float]] = Field(None, description="[x, y] for map display")
     description: Optional[str] = Field(None, description="Human-readable reason")
+
+    @field_validator("feature_id", mode="before")
+    @classmethod
+    def _coerce_feature_id(cls, v: Any) -> Any:
+        return _to_native(v)
 
 
 # Error codes for consistent API error responses
